@@ -1,0 +1,86 @@
+services:
+
+  # ─── Banco de Dados ───────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: oficina_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: oficina_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - oficina_net
+
+  # ─── Backend (Go + Gin) ───────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: oficina_backend
+    restart: always
+    environment:
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: 1234
+      DB_NAME: oficina_db
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - oficina_net
+
+  # ─── Frontend (Node.js + Next.js) ─────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: oficina_frontend
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      N8N_WEBHOOK_URL: http://n8n:5678
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - oficina_net
+
+  # ─── n8n (Automação + IA Gemini) ──────────────────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: oficina_n8n
+    restart: always
+    environment:
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: admin
+      N8N_BASIC_AUTH_PASSWORD: admin123
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678
+      GEMINI_API_KEY: SUA_CHAVE_AQUI
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - oficina_net
+
+# ─── Volumes persistentes ────────────────────────────────────────
+volumes:
+  pgdata:
+  n8n_data:
+
+# ─── Rede interna ────────────────────────────────────────────────
+networks:
+  oficina_net:
+    driver: bridge
