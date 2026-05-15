@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  --bg:         #0f0f0f;
+  --bg-50:      #1a1a1a;
+  --bg-100:     #242424;
+  --bg-200:     #2e2e2e;
+  --border:     #333333;
+  --text:       #f0ede8;
+  --text-muted: #888880;
+  --accent:     #ff6b0a;
+  --accent-dim: #c04000;
+  --success:    #22c55e;
+  --danger:     #ef4444;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-50); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+/* Animações */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-accent {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,10,0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(255,107,10,0); }
+}
+
+.fade-up { animation: fadeUp 0.4s ease both; }
+.fade-up-delay-1 { animation: fadeUp 0.4s ease 0.05s both; }
+.fade-up-delay-2 { animation: fadeUp 0.4s ease 0.10s both; }
+.fade-up-delay-3 { animation: fadeUp 0.4s ease 0.15s both; }
