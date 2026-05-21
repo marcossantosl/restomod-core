@@ -15,20 +15,20 @@ func main() {
 	config.ConnectDatabase()
 
 	// Cria as tabelas automaticamente se não existirem
-config.DB.Config.DisableForeignKeyConstraintWhenMigrating = true
+	config.DB.Config.DisableForeignKeyConstraintWhenMigrating = true
 
-// Roda a migração (a ordem agora importa menos, mas mantenha a lógica)
-config.DB.AutoMigrate(
-    &models.Oficina{},
-    &models.Cliente{},
-    &models.Veiculo{},
-    &models.Peca{},
-    &models.Mecanico{},
-    &models.Projeto{},
-    &models.Servico{},
-)
+	// falta atualizar com todas as tabelas do banco já adicionadas em models e handlers
+	config.DB.AutoMigrate(
+		&models.Oficina{},
+		&models.Cliente{},
+		&models.Veiculo{},
+		&models.Peca{},
+		&models.Mecanico{},
+		&models.Projeto{},
+		&models.Servico{},
+	)
 
-config.DB.Config.DisableForeignKeyConstraintWhenMigrating = false
+	config.DB.Config.DisableForeignKeyConstraintWhenMigrating = false
 	// Inicializa o Gin
 	r := gin.Default()
 
