@@ -60,6 +60,16 @@ func SetupRoutes(r *gin.Engine) {
 		pecas.DELETE("/:id", handlers.DeletarPeca)
 	}
 
+	// ─── Uso Peca ─────────────────────────────────────────────────
+	usoPeca := api.Group("/usopeca")
+	{
+		usoPeca.GET("", handlers.ListarUsoPeca)
+		usoPeca.GET("/:id", handlers.BuscarUsoPeca)
+		usoPeca.POST("", handlers.InserirUsoPeca)
+		usoPeca.PUT("/:id", handlers.AtualizarUsoPeca)
+		usoPeca.DELETE("/:id", handlers.DeletarUsoPeca)
+	}
+
 	// ─── Serviços ──────────────────────────────────────────────
 	servicos := api.Group("/servicos")
 	{
@@ -69,4 +79,78 @@ func SetupRoutes(r *gin.Engine) {
 		servicos.PUT("/:id", handlers.AtualizarServico)
 		servicos.DELETE("/:id", handlers.DeletarServico)
 	}
+
+	// ─── Fornecedor ──────────────────────────────────────────────
+	fornecedor := api.Group("/fornecedor")
+	{
+		fornecedor.GET("", handlers.ListarFornecedores)
+		fornecedor.GET("/:id", handlers.BuscarFornecedor)
+		fornecedor.POST("", handlers.CriarFornecedor)
+		fornecedor.PUT("/:id", handlers.AtualizarFornecedor)
+		fornecedor.DELETE("/:id", handlers.DeletarFornecedor)
+	}
+
+	// ─── Fornecedor Peça (fornece) ──────────────────────────────────────────────
+	fornecedorPeca := api.Group("/fornecedorpeca")
+	{
+		fornecedorPeca.GET("", handlers.ListarFornecedorPeca)
+		fornecedorPeca.POST("", handlers.CriarFornecedorPeca)
+		fornecedorPeca.DELETE("", handlers.DeletarFornecedorPeca)
+	}
+	// ─── Historico Projeto ──────────────────────────────────────────────
+	historicoProjeto := api.Group("/historicoprojeto")
+	{
+		historicoProjeto.GET("", handlers.ListarHistoricoProjeto)
+		historicoProjeto.GET("/:id", handlers.BuscarHistoricoProjeto)
+		historicoProjeto.POST("", handlers.CriarHistoricoProjeto)
+		historicoProjeto.PUT("/:id", handlers.AtualizarHistoricoProjeto)
+		historicoProjeto.DELETE("/:id", handlers.DeletarHistoricoProjeto)
+	}
+
+	// ─── Inspecao ──────────────────────────────────────────────
+	inspecao := api.Group("/inspecao")
+	{
+		inspecao.GET("", handlers.ListarInspecao)
+		inspecao.GET("/:id", handlers.BuscarInspecao)
+		inspecao.POST("", handlers.CriarInspecao)
+		inspecao.PUT("/:id", handlers.AtualizarInspecao)
+		inspecao.DELETE("/:id", handlers.DeletarInspecao)
+	}
+
+	// ─── Mecanico Serviço (realiza) ──────────────────────────────────────────────
+	mecanicoServico := api.Group("/mecanicoservico")
+	{
+		mecanicoServico.GET("", handlers.ListarMecanicoServico)
+		mecanicoServico.POST("", handlers.CriarMecanicoServico)
+		mecanicoServico.DELETE("", handlers.DeletarMecanicoServico)
+	}
+
+	// ─── Oficina ──────────────────────────────────────────────
+	oficina := api.Group("/oficina")
+	{
+		oficina.GET("", handlers.ListarOficinas)
+		oficina.GET("/:id", handlers.BuscarOficina)
+		oficina.POST("", handlers.CriarOficina)
+		oficina.PUT("/:id", handlers.AtualizarOficina)
+		oficina.DELETE("/:id", handlers.DeletarOficina)
+	}
+
+	// ─── Upgrade Projeto (contempla) ──────────────────────────────────────────────
+	upgradeProjeto := api.Group("/upgradeprojeto")
+	{
+		upgradeProjeto.GET("", handlers.ListarUpgradeProjeto)
+		upgradeProjeto.POST("", handlers.CriarUpgradeProjeto)
+		upgradeProjeto.DELETE("", handlers.DeletarUpgradeProjeto)
+	}
+
+	// ─── Upgrade Restomod  ──────────────────────────────────────────────
+	upgradeRestomod := api.Group("/upgraderestomod")
+	{
+		upgradeRestomod.GET("", handlers.ListarUpgradeRestomod)
+		upgradeRestomod.GET("/:id", handlers.BuscarUpgradeRestomod)
+		upgradeRestomod.POST("", handlers.CriarUpgradeRestomod)
+		upgradeRestomod.PUT("/:id", handlers.AtualizarUpgradeRestomod)
+		upgradeRestomod.DELETE("/:id", handlers.DeletarUpgradeRestomod)
+	}
+
 }

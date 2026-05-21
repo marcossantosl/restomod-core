@@ -26,6 +26,15 @@ func main() {
 		&models.Mecanico{},
 		&models.Projeto{},
 		&models.Servico{},
+		&models.Fornecedor{},
+		&models.Inspecao{},
+		&models.UpgradeRestomod{},
+		&models.HistoricoProjeto{},
+		// Associativas por último (dependem das outras)
+		&models.MecanicoServico{},
+		&models.FornecedorPeca{},
+		&models.UpgradeProjeto{},
+		&models.UsoPeca{},
 	)
 
 	config.DB.Config.DisableForeignKeyConstraintWhenMigrating = false

@@ -52,3 +52,15 @@ func AtualizarUsoPeca(c *gin.Context) {
 	config.DB.Save(&usopeca)
 	c.JSON(201, usopeca)
 }
+
+//DELETE/API/USOPECA:ID
+
+func DeletarUsoPeca(c *gin.Context) {
+	var usopeca models.UsoPeca
+	if err := config.DB.First(&usopeca, c.Param("id")).Error; err != nil {
+		c.JSON(404, gin.H{"erro": err.Error()})
+		return
+	}
+	config.DB.Delete(&usopeca)
+	c.JSON(200, usopeca)
+}
