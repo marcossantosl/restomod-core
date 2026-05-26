@@ -126,7 +126,7 @@ func SetupRoutes(r *gin.Engine) {
 	}
 
 	// ─── Oficina ──────────────────────────────────────────────
-	oficina := api.Group("/oficina")
+	oficina := api.Group("/oficinas")
 	{
 		oficina.GET("", handlers.ListarOficinas)
 		oficina.GET("/:id", handlers.BuscarOficina)

@@ -136,7 +136,7 @@ type MecanicoServico struct {
 func (MecanicoServico) TableName() string { return "realiza" }
 
 type UpgradeRestomod struct {
-	IDUpgradeRestomod  uint      `gorm:"foreignKey;autoIncrement.column:id_upgrade_restomod"         json:"id_upgrade_restomod"`
+	IDUpgradeRestomod  uint      `gorm:"foreignKey;autoIncrement;column:id_upgrade_restomod"         json:"id_upgrade_restomod"`
 	SistemaAlvo        string    `gorm:"column:sistema_alvo"                                         json:"sistema_alvo"`
 	VeiculoDoador      string    `gorm:"column:veiculo_doador"                                       json:"veiculo_doador"`
 	DescricaoAdaptacao string    `gorm:"column:descricao_adaptacao"                                  json:"descricao_adaptacao"`

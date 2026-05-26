@@ -1,8 +1,7 @@
-
--- Criação das Tabelas (DDL)
+-- DDL Ajustado com SERIAL para auto-incremento em todas as chaves primárias
 
 CREATE TABLE Cliente (
-    id_cliente INTEGER PRIMARY KEY,
+    id_cliente SERIAL PRIMARY KEY,
     nome VARCHAR(50) NOT NULL,
     cpf VARCHAR(14),
     email VARCHAR(100),
@@ -11,7 +10,7 @@ CREATE TABLE Cliente (
 );
 
 CREATE TABLE Oficina (
-    id_oficina INTEGER PRIMARY KEY,
+    id_oficina SERIAL PRIMARY KEY,
     nome VARCHAR(50) NOT NULL,
     cnpj VARCHAR(18),
     especialidade VARCHAR(100),
@@ -20,7 +19,7 @@ CREATE TABLE Oficina (
 );
 
 CREATE TABLE Projeto (
-    id_projeto INTEGER PRIMARY KEY,
+    id_projeto SERIAL PRIMARY KEY,
     data_inicio DATE,
     data_previsao DATE,
     orcamento_total DECIMAL(12,2),
@@ -32,7 +31,7 @@ CREATE TABLE Projeto (
 );
 
 CREATE TABLE Upgrade_Restomod (
-    id_upgrade_restomod INTEGER PRIMARY KEY,
+    id_upgrade_restomod SERIAL PRIMARY KEY,
     sistema_alvo VARCHAR(50),
     veiculo_doador VARCHAR(50),
     descricao_adaptacao VARCHAR(500),
@@ -50,7 +49,7 @@ CREATE TABLE Contempla (
 );
 
 CREATE TABLE Veiculo (
-    id_veiculo INTEGER PRIMARY KEY,
+    id_veiculo SERIAL PRIMARY KEY,
     marca VARCHAR(20),
     modelo VARCHAR(20),
     chassi VARCHAR(50),
@@ -62,7 +61,7 @@ CREATE TABLE Veiculo (
 );
 
 CREATE TABLE historico_projeto (
-    id_historico INTEGER PRIMARY KEY,
+    id_historico SERIAL PRIMARY KEY,
     status VARCHAR(20),
     data DATE,
     km_registrado INTEGER,
@@ -75,7 +74,7 @@ CREATE TABLE historico_projeto (
 );
 
 CREATE TABLE Mecanico (
-    id_mecanico INTEGER PRIMARY KEY,
+    id_mecanico SERIAL PRIMARY KEY,
     nome VARCHAR(50),
     cpf VARCHAR(14),
     especialidade VARCHAR(100),
@@ -85,7 +84,7 @@ CREATE TABLE Mecanico (
 );
 
 CREATE TABLE Inspecao (
-    id_inspecao INTEGER PRIMARY KEY,
+    id_inspecao SERIAL PRIMARY KEY,
     data_inspecao DATE,
     tipo VARCHAR(20),
     resultado VARCHAR(500),
@@ -97,7 +96,7 @@ CREATE TABLE Inspecao (
 );
 
 CREATE TABLE Servico (
-    id_servico INTEGER PRIMARY KEY,
+    id_servico SERIAL PRIMARY KEY,
     horas_realizadas DECIMAL(5,2),
     horas_estimadas DECIMAL(5,2),
     valor DECIMAL(10,2),
@@ -116,20 +115,20 @@ CREATE TABLE Realiza (
 );
 
 CREATE TABLE Fornecedor (
-    id_fornecedor INTEGER PRIMARY KEY,
+    id_fornecedor SERIAL PRIMARY KEY,
     contato VARCHAR(50),
     especialidade VARCHAR(100),
     nome VARCHAR(50)
 );
 
 CREATE TABLE Peca (
-    id_peca INTEGER PRIMARY KEY,
+    id_peca SERIAL PRIMARY KEY,
     nome VARCHAR(100),
     fabricante VARCHAR(20),
     origem VARCHAR(20),
     estoque INTEGER,
     numero_peca INTEGER,
-    preco_referencia DECIMAL(10,2), -- Renomeado conforme nossa última conversa
+    preco_referencia DECIMAL(10,2),
     tipo_peca VARCHAR(20)
 );
 
@@ -142,18 +141,11 @@ CREATE TABLE fornece (
 );
 
 CREATE TABLE Uso_Peca (
-    id_uso_peca INTEGER PRIMARY KEY,
-    valor_venda DECIMAL(10,2), -- O valor histórico cobrado no serviço
+    id_uso_peca SERIAL PRIMARY KEY,
+    valor_venda DECIMAL(10,2),
     quantidade INTEGER,
     id_peca INTEGER,
     id_servico INTEGER,
     FOREIGN KEY (id_peca) REFERENCES Peca(id_peca),
     FOREIGN KEY (id_servico) REFERENCES Servico(id_servico)
 );
-
-SELECT pg_terminate_backend(pid) 
-   FROM pg_stat_activity 
-   WHERE datname = 'Modelagem de Banco de Dados para Plataforma de Restomod';
-
-   -- Renomeia o banco (o nome atual deve estar entre aspas duplas por causa dos espaços)
-   ALTER DATABASE "Modelagem de Banco de Dados para Plataforma de Restomod" RENAME TO oficina_db;

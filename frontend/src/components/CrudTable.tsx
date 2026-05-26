@@ -1,10 +1,13 @@
 'use client'
-import { Pencil, Trash2, Plus, X, Check } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Pencil, Trash2, Plus, X, Check, Search, ChevronDown } from 'lucide-react'
 
 interface Column {
   key: string
   label: string
-  type?: 'text' | 'number' | 'date' | 'email'
+  type?: 'text' | 'number' | 'date' | 'email' | 'select'
+  editKey?: string
+  options?: { label: string, value: string | number }[]
 }
 
 interface CrudTableProps {
@@ -22,6 +25,94 @@ interface CrudTableProps {
   setNewItem: (v: any) => void
 }
 
+// --- NOVO COMPONENTE: Select com Pesquisa e Scroll ---
+function SearchableSelect({ options, value, onChange }: { options: any[], value: any, onChange: (val: any) => void }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  // Fecha o dropdown se clicar fora dele
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) setIsOpen(false)
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const filteredOptions = options.filter(opt => opt.label.toLowerCase().includes(search.toLowerCase()))
+  const selectedLabel = options.find(opt => opt.value === value)?.label || "Selecione..."
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+      {/* Botão que imita o input */}
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          background: 'var(--bg-100)', border: '1px solid var(--border)', borderRadius: 5,
+          padding: '6px 10px', color: value ? 'var(--text)' : 'var(--text-muted)', fontSize: 13,
+          cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedLabel}</span>
+        <ChevronDown size={14} />
+      </div>
+
+      {/* Menu Dropdown */}
+      {isOpen && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, width: '100%',
+          background: 'var(--bg-50)', border: '1px solid var(--border)', borderRadius: 5,
+          marginTop: 4, zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          display: 'flex', flexDirection: 'column'
+        }}>
+          {/* Campo de Busca */}
+          <div style={{ padding: 8, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Search size={14} color="var(--text-muted)" />
+            <input
+              autoFocus
+              type="text"
+              placeholder="Pesquisar..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                border: 'none', background: 'transparent', outline: 'none',
+                color: 'var(--text)', fontSize: 13, width: '100%'
+              }}
+            />
+          </div>
+
+          {/* Lista com Scroll e Limite de Altura */}
+          <div style={{ maxHeight: 180, overflowY: 'auto' }}>
+            {filteredOptions.length > 0 ? filteredOptions.map(opt => (
+              <div
+                key={opt.value}
+                onClick={() => {
+                  onChange(opt.value)
+                  setIsOpen(false)
+                  setSearch('')
+                }}
+                style={{
+                  padding: '8px 10px', fontSize: 13, cursor: 'pointer',
+                  background: value === opt.value ? 'var(--accent)' : 'transparent',
+                  color: value === opt.value ? '#fff' : 'var(--text)',
+                }}
+                onMouseEnter={e => { if (value !== opt.value) e.currentTarget.style.background = 'rgba(255,107,10,0.1)' }}
+                onMouseLeave={e => { if (value !== opt.value) e.currentTarget.style.background = 'transparent' }}
+              >
+                {opt.label}
+              </div>
+            )) : (
+              <div style={{ padding: '8px 10px', fontSize: 13, color: 'var(--text-muted)' }}>Nenhum resultado</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+// -----------------------------------------------------
+
 export default function CrudTable({
   title, data, columns, idKey,
   onSave, onDelete,
@@ -31,19 +122,20 @@ export default function CrudTable({
 }: CrudTableProps) {
 
   const inputStyle = {
-    background: 'var(--bg-100)',
-    border: '1px solid var(--border)',
-    borderRadius: 5,
-    padding: '6px 10px',
-    color: 'var(--text)',
-    fontSize: 13,
-    width: '100%',
-    outline: 'none',
+    background: 'var(--bg-100)', border: '1px solid var(--border)', borderRadius: 5,
+    padding: '6px 10px', color: 'var(--text)', fontSize: 13, width: '100%', outline: 'none',
+  }
+
+  const getValue = (row: any, key: string) => {
+    if (key.includes('.')) {
+      const [parent, child] = key.split('.')
+      return row[parent]?.[child] ?? '—'
+    }
+    return row[key] ?? '—'
   }
 
   return (
     <div className="fade-up">
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
         <div>
           <h1 style={{ fontSize: 42, fontWeight: 800, textTransform: 'uppercase' }}>{title}</h1>
@@ -52,27 +144,22 @@ export default function CrudTable({
         <button
           onClick={() => { setCreating(true); setEditing(null) }}
           style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: 'var(--accent)', color: '#fff',
-            border: 'none', borderRadius: 7, padding: '10px 18px',
-            fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600,
-            letterSpacing: '0.03em', cursor: 'pointer', textTransform: 'uppercase',
+            display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent)', color: '#fff',
+            border: 'none', borderRadius: 7, padding: '10px 18px', fontFamily: 'var(--font-display)',
+            fontSize: 15, fontWeight: 600, letterSpacing: '0.03em', cursor: 'pointer', textTransform: 'uppercase',
           }}>
           <Plus size={15} /> Novo
         </button>
       </div>
-
-      {/* Tabela */}
-      <div style={{ background: 'var(--bg-50)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+      /* Tabela */
+      <div style={{ background: 'var(--bg-50)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'visible' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               {columns.map(c => (
                 <th key={c.key} style={{
-                  padding: '12px 16px', textAlign: 'left',
-                  fontFamily: 'var(--font-display)', fontSize: 12,
-                  fontWeight: 700, letterSpacing: '0.08em',
-                  textTransform: 'uppercase', color: 'var(--text-muted)',
+                  padding: '12px 16px', textAlign: 'left', fontFamily: 'var(--font-display)',
+                  fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)',
                 }}>
                   {c.label}
                 </th>
@@ -82,18 +169,26 @@ export default function CrudTable({
           </thead>
           <tbody>
 
-            {/* Linha de criação */}
             {creating && (
               <tr style={{ background: 'rgba(255,107,10,0.05)', borderBottom: '1px solid var(--border)' }}>
                 {columns.map(c => (
                   <td key={c.key} style={{ padding: '10px 12px' }}>
-                    <input
-                      style={inputStyle}
-                      type={c.type || 'text'}
-                      placeholder={c.label}
-                      value={newItem[c.key] || ''}
-                      onChange={e => setNewItem({ ...newItem, [c.key]: e.target.value })}
-                    />
+                    {c.type === 'select' && c.options ? (
+                      // Usando o novo componente na CRIAÇÃO
+                      <SearchableSelect
+                        options={c.options}
+                        value={newItem[c.editKey || c.key] || ''}
+                        onChange={(val) => setNewItem({ ...newItem, [c.editKey || c.key]: val })}
+                      />
+                    ) : (
+                      <input
+                        style={inputStyle}
+                        type={c.type || 'text'}
+                        placeholder={c.label}
+                        value={newItem[c.key] || ''}
+                        onChange={e => setNewItem({ ...newItem, [c.key]: e.target.value })}
+                      />
+                    )}
                   </td>
                 ))}
                 <td style={{ padding: '10px 12px' }}>
@@ -105,7 +200,6 @@ export default function CrudTable({
               </tr>
             )}
 
-            {/* Linhas de dados */}
             {data.map((row, i) => (
               <tr key={row[idKey]} style={{
                 borderBottom: i < data.length - 1 ? '1px solid var(--border)' : 'none',
@@ -115,14 +209,23 @@ export default function CrudTable({
                 {columns.map(c => (
                   <td key={c.key} style={{ padding: '10px 16px', color: 'var(--text)' }}>
                     {editing?.[idKey] === row[idKey] ? (
-                      <input
-                        style={inputStyle}
-                        type={c.type || 'text'}
-                        value={editing[c.key] || ''}
-                        onChange={e => setEditing({ ...editing, [c.key]: e.target.value })}
-                      />
+                      c.type === 'select' && c.options ? (
+                        // Usando o novo componente na EDIÇÃO
+                        <SearchableSelect
+                          options={c.options}
+                          value={editing[c.editKey || c.key] || ''}
+                          onChange={(val) => setEditing({ ...editing, [c.editKey || c.key]: val })}
+                        />
+                      ) : (
+                        <input
+                          style={inputStyle}
+                          type={c.type || 'text'}
+                          value={editing[c.key] || ''}
+                          onChange={e => setEditing({ ...editing, [c.key]: e.target.value })}
+                        />
+                      )
                     ) : (
-                      <span>{row[c.key] ?? '—'}</span>
+                      <span>{getValue(row, c.key)}</span>
                     )}
                   </td>
                 ))}

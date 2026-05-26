@@ -3,21 +3,18 @@ import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import CrudTable from '@/components/CrudTable'
 
-const columns = [
-  { key: 'nome',          label: 'Nome' },
-  { key: 'cpf',           label: 'CPF' },
-  { key: 'especialidade', label: 'Especialidade' },
-  { key: 'nivel',         label: 'Nível' },
-  { key: 'id_oficina',    label: 'ID Oficina', type: 'number' as const },
-]
-
 export default function MecanicosPage() {
   const [data, setData]         = useState<any[]>([])
+  const [oficinas, setOficinas] = useState<any[]>([]) // 1. Novo estado para as oficinas
   const [editing, setEditing]   = useState<any | null>(null)
   const [creating, setCreating] = useState(false)
   const [newItem, setNewItem]   = useState<any>({})
 
-  const load = () => api.get('/api/mecanicos').then(r => setData(r.data))
+  const load = () => {
+    api.get('/api/mecanicos').then(r => setData(r.data))
+    api.get('/api/oficinas').then(r => setOficinas(r.data)) // 2. Busca das oficinas adicionada aqui
+  }
+  
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
@@ -38,6 +35,21 @@ export default function MecanicosPage() {
       load()
     }
   }
+
+  // 3. Array columns movido para dentro do componente para acessar o estado 'oficinas'
+  const columns = [
+    { key: 'nome',          label: 'Nome' },
+    { key: 'cpf',           label: 'CPF' },
+    { key: 'especialidade', label: 'Especialidade' },
+    { key: 'nivel',         label: 'Nível' },
+    { 
+      key: 'oficina.nome',  // Usado para exibição (renderiza via getValue)
+      label: 'Oficina', 
+      type: 'select' as const, // Força a tipagem exata
+      editKey: 'id_oficina',   // Chave que será atualizada no JSON do backend
+      options: oficinas.map(o => ({ label: o.nome, value: o.id_oficina })) // Opções mapeadas dinamicamente
+    },
+  ]
 
   return (
     <CrudTable
