@@ -1,13 +1,15 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import { Pencil, Trash2, Plus, X, Check, Search, ChevronDown } from 'lucide-react'
+import { Pencil, Trash2, Plus, X, Check, Search, ChevronDown, CheckSquare, Square } from 'lucide-react'
 
+// 1. Adicionado 'multi-select' e 'render'
 interface Column {
   key: string
   label: string
-  type?: 'text' | 'number' | 'date' | 'email' | 'select'
+  type?: 'text' | 'number' | 'date' | 'email' | 'select' | 'multi-select'
   editKey?: string
   options?: { label: string, value: string | number }[]
+  render?: (row: any) => React.ReactNode // Função customizada para desenhar a célula
 }
 
 interface CrudTableProps {
@@ -25,16 +27,15 @@ interface CrudTableProps {
   setNewItem: (v: any) => void
 }
 
-// --- NOVO COMPONENTE: Select com Pesquisa e Scroll ---
+// --- Select Simples (1:N) ---
 function SearchableSelect({ options, value, onChange }: { options: any[], value: any, onChange: (val: any) => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  // Fecha o dropdown se clicar fora dele
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) setIsOpen(false)
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setIsOpen(false)
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
@@ -45,66 +46,82 @@ function SearchableSelect({ options, value, onChange }: { options: any[], value:
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
-      {/* Botão que imita o input */}
-      <div 
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          background: 'var(--bg-100)', border: '1px solid var(--border)', borderRadius: 5,
-          padding: '6px 10px', color: value ? 'var(--text)' : 'var(--text-muted)', fontSize: 13,
-          cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-        }}
-      >
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedLabel}</span>
-        <ChevronDown size={14} />
+      <div onClick={() => setIsOpen(!isOpen)} style={selectBoxStyle}>
+        <span style={truncateStyle}>{selectedLabel}</span> <ChevronDown size={14} />
       </div>
-
-      {/* Menu Dropdown */}
       {isOpen && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, width: '100%',
-          background: 'var(--bg-50)', border: '1px solid var(--border)', borderRadius: 5,
-          marginTop: 4, zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          display: 'flex', flexDirection: 'column'
-        }}>
-          {/* Campo de Busca */}
-          <div style={{ padding: 8, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={dropdownMenuDiv}>
+          <div style={searchInputWrapper}>
             <Search size={14} color="var(--text-muted)" />
-            <input
-              autoFocus
-              type="text"
-              placeholder="Pesquisar..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{
-                border: 'none', background: 'transparent', outline: 'none',
-                color: 'var(--text)', fontSize: 13, width: '100%'
-              }}
-            />
+            <input autoFocus type="text" placeholder="Pesquisar..." value={search} onChange={e => setSearch(e.target.value)} style={searchInputStyle} />
           </div>
-
-          {/* Lista com Scroll e Limite de Altura */}
           <div style={{ maxHeight: 180, overflowY: 'auto' }}>
             {filteredOptions.length > 0 ? filteredOptions.map(opt => (
-              <div
-                key={opt.value}
-                onClick={() => {
-                  onChange(opt.value)
-                  setIsOpen(false)
-                  setSearch('')
-                }}
-                style={{
-                  padding: '8px 10px', fontSize: 13, cursor: 'pointer',
-                  background: value === opt.value ? 'var(--accent)' : 'transparent',
-                  color: value === opt.value ? '#fff' : 'var(--text)',
-                }}
+              <div key={opt.value} onClick={() => { onChange(opt.value); setIsOpen(false); setSearch('') }}
+                style={{ ...optionItemStyle, background: value === opt.value ? 'var(--accent)' : 'transparent', color: value === opt.value ? '#fff' : 'var(--text)' }}
                 onMouseEnter={e => { if (value !== opt.value) e.currentTarget.style.background = 'rgba(255,107,10,0.1)' }}
                 onMouseLeave={e => { if (value !== opt.value) e.currentTarget.style.background = 'transparent' }}
               >
                 {opt.label}
               </div>
-            )) : (
-              <div style={{ padding: '8px 10px', fontSize: 13, color: 'var(--text-muted)' }}>Nenhum resultado</div>
-            )}
+            )) : <div style={noResultStyle}>Nenhum resultado</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// --- NOVO: Multi-Select (N:N) ---
+function MultiSearchableSelect({ options, value = [], onChange }: { options: any[], value: any[], onChange: (val: any[]) => void }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setIsOpen(false)
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const filteredOptions = options.filter(opt => opt.label.toLowerCase().includes(search.toLowerCase()))
+  
+  // Array de valores seguros
+  const safeValue = Array.isArray(value) ? value : []
+  const labelText = safeValue.length > 0 ? `${safeValue.length} selecionado(s)` : "Selecione..."
+
+  const toggleOption = (optValue: any) => {
+    if (safeValue.includes(optValue)) onChange(safeValue.filter(v => v !== optValue))
+    else onChange([...safeValue, optValue])
+  }
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+      <div onClick={() => setIsOpen(!isOpen)} style={selectBoxStyle}>
+        <span style={truncateStyle}>{labelText}</span> <ChevronDown size={14} />
+      </div>
+      {isOpen && (
+        <div style={dropdownMenuDiv}>
+          <div style={searchInputWrapper}>
+            <Search size={14} color="var(--text-muted)" />
+            <input autoFocus type="text" placeholder="Pesquisar..." value={search} onChange={e => setSearch(e.target.value)} style={searchInputStyle} />
+          </div>
+          <div style={{ maxHeight: 180, overflowY: 'auto' }}>
+            {filteredOptions.length > 0 ? filteredOptions.map(opt => {
+              const isSelected = safeValue.includes(opt.value)
+              return (
+                <div key={opt.value} onClick={() => toggleOption(opt.value)}
+                  style={{ ...optionItemStyle, display: 'flex', alignItems: 'center', gap: 8, background: isSelected ? 'rgba(255,107,10,0.05)' : 'transparent' }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,107,10,0.1)' }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+                >
+                  {isSelected ? <CheckSquare size={14} color="var(--accent)" /> : <Square size={14} color="var(--text-muted)" />}
+                  {opt.label}
+                </div>
+              )
+            }) : <div style={noResultStyle}>Nenhum resultado</div>}
           </div>
         </div>
       )}
@@ -134,6 +151,28 @@ export default function CrudTable({
     return row[key] ?? '—'
   }
 
+  // Renderiza o input correto baseado no tipo
+  const renderInput = (c: Column, itemState: any, setItemState: any) => {
+    const valKey = c.editKey || c.key
+    
+    if (c.type === 'select' && c.options) {
+      return <SearchableSelect options={c.options} value={itemState[valKey]} onChange={(val) => setItemState({ ...itemState, [valKey]: val })} />
+    } 
+    if (c.type === 'multi-select' && c.options) {
+      return <MultiSearchableSelect options={c.options} value={itemState[valKey]} onChange={(val) => setItemState({ ...itemState, [valKey]: val })} />
+    }
+    
+    return (
+      <input
+        style={inputStyle}
+        type={c.type || 'text'}
+        placeholder={c.label}
+        value={itemState[c.key] || ''}
+        onChange={e => setItemState({ ...itemState, [c.key]: c.type === 'number' ? Number(e.target.value) : e.target.value })}
+      />
+    )
+  }
+
   return (
     <div className="fade-up">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
@@ -141,29 +180,16 @@ export default function CrudTable({
           <h1 style={{ fontSize: 42, fontWeight: 800, textTransform: 'uppercase' }}>{title}</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{data.length} registros</p>
         </div>
-        <button
-          onClick={() => { setCreating(true); setEditing(null) }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent)', color: '#fff',
-            border: 'none', borderRadius: 7, padding: '10px 18px', fontFamily: 'var(--font-display)',
-            fontSize: 15, fontWeight: 600, letterSpacing: '0.03em', cursor: 'pointer', textTransform: 'uppercase',
-          }}>
+        <button onClick={() => { setCreating(true); setEditing(null) }} style={btnNovoStyle}>
           <Plus size={15} /> Novo
         </button>
       </div>
-      /* Tabela */
+
       <div style={{ background: 'var(--bg-50)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'visible' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {columns.map(c => (
-                <th key={c.key} style={{
-                  padding: '12px 16px', textAlign: 'left', fontFamily: 'var(--font-display)',
-                  fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)',
-                }}>
-                  {c.label}
-                </th>
-              ))}
+              {columns.map(c => (<th key={c.key} style={thStyle}>{c.label}</th>))}
               <th style={{ padding: '12px 16px', width: 80 }} />
             </tr>
           </thead>
@@ -173,22 +199,7 @@ export default function CrudTable({
               <tr style={{ background: 'rgba(255,107,10,0.05)', borderBottom: '1px solid var(--border)' }}>
                 {columns.map(c => (
                   <td key={c.key} style={{ padding: '10px 12px' }}>
-                    {c.type === 'select' && c.options ? (
-                      // Usando o novo componente na CRIAÇÃO
-                      <SearchableSelect
-                        options={c.options}
-                        value={newItem[c.editKey || c.key] || ''}
-                        onChange={(val) => setNewItem({ ...newItem, [c.editKey || c.key]: val })}
-                      />
-                    ) : (
-                      <input
-                        style={inputStyle}
-                        type={c.type || 'text'}
-                        placeholder={c.label}
-                        value={newItem[c.key] || ''}
-                        onChange={e => setNewItem({ ...newItem, [c.key]: e.target.value })}
-                      />
-                    )}
+                    {renderInput(c, newItem, setNewItem)}
                   </td>
                 ))}
                 <td style={{ padding: '10px 12px' }}>
@@ -201,32 +212,13 @@ export default function CrudTable({
             )}
 
             {data.map((row, i) => (
-              <tr key={row[idKey]} style={{
-                borderBottom: i < data.length - 1 ? '1px solid var(--border)' : 'none',
-                background: editing?.[idKey] === row[idKey] ? 'rgba(255,107,10,0.05)' : 'transparent',
-                transition: 'background 0.15s',
-              }}>
+              <tr key={row[idKey]} style={{ borderBottom: i < data.length - 1 ? '1px solid var(--border)' : 'none', background: editing?.[idKey] === row[idKey] ? 'rgba(255,107,10,0.05)' : 'transparent', transition: 'background 0.15s' }}>
                 {columns.map(c => (
                   <td key={c.key} style={{ padding: '10px 16px', color: 'var(--text)' }}>
-                    {editing?.[idKey] === row[idKey] ? (
-                      c.type === 'select' && c.options ? (
-                        // Usando o novo componente na EDIÇÃO
-                        <SearchableSelect
-                          options={c.options}
-                          value={editing[c.editKey || c.key] || ''}
-                          onChange={(val) => setEditing({ ...editing, [c.editKey || c.key]: val })}
-                        />
-                      ) : (
-                        <input
-                          style={inputStyle}
-                          type={c.type || 'text'}
-                          value={editing[c.key] || ''}
-                          onChange={e => setEditing({ ...editing, [c.key]: e.target.value })}
-                        />
-                      )
-                    ) : (
-                      <span>{getValue(row, c.key)}</span>
-                    )}
+                    {editing?.[idKey] === row[idKey] 
+                      ? renderInput(c, editing, setEditing) 
+                      : (c.render ? c.render(row) : <span>{getValue(row, c.key)}</span>) // Usa o render customizado se existir
+                    }
                   </td>
                 ))}
                 <td style={{ padding: '10px 16px' }}>
@@ -246,14 +238,6 @@ export default function CrudTable({
                 </td>
               </tr>
             ))}
-
-            {data.length === 0 && !creating && (
-              <tr>
-                <td colSpan={columns.length + 1} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  Nenhum registro encontrado
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
@@ -261,13 +245,14 @@ export default function CrudTable({
   )
 }
 
-const iconBtn: React.CSSProperties = {
-  background: 'var(--bg-100)',
-  border: '1px solid var(--border)',
-  borderRadius: 5,
-  padding: '5px 7px',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  transition: 'all 0.15s',
-}
+// Estilos extraídos para limpar o código
+const btnNovoStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 7, padding: '10px 18px', fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, cursor: 'pointer', textTransform: 'uppercase' }
+const thStyle: React.CSSProperties = { padding: '12px 16px', textAlign: 'left', fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }
+const iconBtn: React.CSSProperties = { background: 'var(--bg-100)', border: '1px solid var(--border)', borderRadius: 5, padding: '5px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }
+const selectBoxStyle: React.CSSProperties = { background: 'var(--bg-100)', border: '1px solid var(--border)', borderRadius: 5, padding: '6px 10px', color: 'var(--text)', fontSize: 13, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
+const truncateStyle: React.CSSProperties = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+const dropdownMenuDiv: React.CSSProperties = { position: 'absolute', top: '100%', left: 0, width: '100%', background: 'var(--bg-50)', border: '1px solid var(--border)', borderRadius: 5, marginTop: 4, zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column' }
+const searchInputWrapper: React.CSSProperties = { padding: 8, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }
+const searchInputStyle: React.CSSProperties = { border: 'none', background: 'transparent', outline: 'none', color: 'var(--text)', fontSize: 13, width: '100%' }
+const optionItemStyle: React.CSSProperties = { padding: '8px 10px', fontSize: 13, cursor: 'pointer' }
+const noResultStyle: React.CSSProperties = { padding: '8px 10px', fontSize: 13, color: 'var(--text-muted)' }

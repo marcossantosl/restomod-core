@@ -3,22 +3,20 @@ import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import CrudTable from '@/components/CrudTable'
 
-const columns = [
-  { key: 'categoria_projeto', label: 'Categoria' },
-  { key: 'data_inicio',       label: 'Início',   type: 'date' as const },
-  { key: 'data_previsao',     label: 'Previsão', type: 'date' as const },
-  { key: 'orcamento_total',   label: 'Orçamento', type: 'number' as const },
-  { key: 'id_cliente',        label: 'ID Cliente', type: 'number' as const },
-  { key: 'id_oficina',        label: 'ID Oficina', type: 'number' as const },
-]
-
 export default function ProjetosPage() {
   const [data, setData]         = useState<any[]>([])
   const [editing, setEditing]   = useState<any | null>(null)
+  const [cliente, setCliente] = useState<any[]>([])
+  const [oficina, setOficina] = useState<any[]>([])  
   const [creating, setCreating] = useState(false)
   const [newItem, setNewItem]   = useState<any>({})
 
-  const load = () => api.get('/api/projetos').then(r => setData(r.data))
+  const load = () => {
+    api.get('/api/projetos').then(r => setData(r.data))
+    api.get('/api/clientes').then(r => setCliente(r.data))
+    api.get('/api/oficinas').then(r => setOficina(r.data))
+  }
+
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
@@ -39,6 +37,28 @@ export default function ProjetosPage() {
       load()
     }
   }
+
+  const columns = [
+  { key: 'categoria_projeto', label: 'Categoria' },
+  { key: 'data_inicio',       label: 'Início',   type: 'date' as const },
+  { key: 'data_previsao',     label: 'Previsão', type: 'date' as const },
+  { key: 'orcamento_total',   label: 'Orçamento', type: 'number' as const },
+  
+  {key: 'cliente.nome',
+   label: 'Cliente destino',
+   type: 'select' as const,
+   editKey: 'id_cliente',
+   options: cliente.map(m => ({label: m.nome, value: m.id_cliente}))
+  },
+
+  {key: 'oficina.nome',
+   label: 'Oficina responsável',
+   type: 'select' as const,
+   editKey: 'id_oficina',
+   options: oficina.map(m => ({label: m.nome, value: m.id_oficina}))
+  }
+  
+]
 
   return (
     <CrudTable

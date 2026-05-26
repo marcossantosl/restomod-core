@@ -27,6 +27,7 @@ func (Oficina) TableName() string { return "oficina" }
 type Projeto struct {
 	IDProjeto        uint      `gorm:"primaryKey;autoIncrement;column:id_projeto" json:"id_projeto"`
 	DataInicio       time.Time `gorm:"column:data_inicio"                         json:"data_inicio"`
+	Titulo           string    `gorm:"column:titulo"                              json:"titulo"`
 	DataPrevisao     time.Time `gorm:"column:data_previsao"                       json:"data_previsao"`
 	OrcamentoTotal   float64   `gorm:"column:orcamento_total"                     json:"orcamento_total"`
 	CategoriaProjeto string    `gorm:"column:categoria_projeto"                   json:"categoria_projeto"`

@@ -20,6 +20,7 @@ CREATE TABLE Oficina (
 
 CREATE TABLE Projeto (
     id_projeto SERIAL PRIMARY KEY,
+    titulo VARCHAR(20)
     data_inicio DATE,
     data_previsao DATE,
     orcamento_total DECIMAL(12,2),
