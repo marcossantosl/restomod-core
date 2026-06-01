@@ -5,14 +5,17 @@ import CrudTable from '@/components/CrudTable'
 
 export default function MecanicosPage() {
   const [data, setData]         = useState<any[]>([])
-  const [oficinas, setOficinas] = useState<any[]>([]) // 1. Novo estado para as oficinas
+  const [oficinas, setOficinas] = useState<any[]>([])
+  const [servicos, setServicos] = useState<any[]>([]) // 1. Novo estado para as oficinas
+ // 1. Novo estado para as oficinas
   const [editing, setEditing]   = useState<any | null>(null)
   const [creating, setCreating] = useState(false)
   const [newItem, setNewItem]   = useState<any>({})
 
   const load = () => {
     api.get('/api/mecanicos').then(r => setData(r.data))
-    api.get('/api/oficinas').then(r => setOficinas(r.data)) // 2. Busca das oficinas adicionada aqui
+    api.get('/api/oficinas').then(r => setOficinas(r.data))
+    api.get('/api/servicos').then(r => setServicos(r.data))  // 2. Busca das oficinas adicionada aqui
   }
   
   useEffect(() => { load() }, [])

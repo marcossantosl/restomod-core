@@ -39,19 +39,22 @@ export default function ProjetosPage() {
   }
 
   const columns = [
+     { key: 'titulo',        label: 'Titulo' },
   { key: 'categoria_projeto', label: 'Categoria' },
   { key: 'data_inicio',       label: 'Início',   type: 'date' as const },
   { key: 'data_previsao',     label: 'Previsão', type: 'date' as const },
   { key: 'orcamento_total',   label: 'Orçamento', type: 'number' as const },
   
-  {key: 'cliente.nome',
+  {
+   key: 'cliente.nome',
    label: 'Cliente destino',
    type: 'select' as const,
    editKey: 'id_cliente',
    options: cliente.map(m => ({label: m.nome, value: m.id_cliente}))
   },
 
-  {key: 'oficina.nome',
+  {
+    key: 'oficina.nome',
    label: 'Oficina responsável',
    type: 'select' as const,
    editKey: 'id_oficina',
