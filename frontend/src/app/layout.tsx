@@ -3,20 +3,25 @@ import './globals.css'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Users, Wrench, Car, FolderKanban,
-  Package, UserCog, Building2, Zap
+  Home, Users, Folder, Car, User, 
+  MapPin, Wrench, Package, Cpu, UserCog, 
+  ShoppingBag, Clock, Clipboard, Layers
 } from 'lucide-react'
 
 const nav = [
-  { href: '/',           label: 'Dashboard',  icon: Zap },
-  { href: '/clientes',   label: 'Clientes',   icon: Users },
-  { href: '/projetos',   label: 'Projetos',   icon: FolderKanban },
-  { href: '/veiculos',   label: 'Veículos',   icon: Car },
-  { href: '/mecanicos',  label: 'Mecânicos',  icon: UserCog },
-  { href: '/oficinas',   label: 'Oficinas',   icon: Building2 },
-  { href: '/servicos',   label: 'Serviços',   icon: Wrench },
-  { href: '/pecas',      label: 'Peças',      icon: Package },
-  { href: '/assistente', label: 'IA Gemini',  icon: Zap },
+  { href: '/',                  label: 'Dashboard',                 icon: Home },
+  { href: '/clientes',          label: 'Clientes',                  icon: Users },
+  { href: '/projetos',          label: 'Projetos',                  icon: Folder },
+  { href: '/historico_projeto', label: 'Histórico Projeto',         icon: Clock },
+  { href: '/veiculos',          label: 'Veículos',                  icon: Car },
+  { href: '/mecanicos',         label: 'Mecânicos',                 icon: UserCog },
+  { href: '/oficinas',          label: 'Oficinas',                  icon: MapPin },
+  { href: '/servicos',          label: 'Serviços',                  icon: Wrench },
+  { href: '/uso_peca',          label: 'Peças Serviço',             icon: Layers },
+  { href: '/pecas',             label: 'Peças',                     icon: Package },
+  { href: '/fornecedor',        label: 'Fornecedor',                icon: ShoppingBag },
+  { href: '/inspecao',          label: 'Inspeção (Análise Veículo)', icon: Clipboard },
+  { href: '/assistente',        label: 'IA Gemini',                 icon: Cpu }
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

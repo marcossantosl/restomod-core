@@ -1,1 +1,15 @@
-frontend/node_modules/
+# Dependências (ignora em qualquer nível: tanto na raiz quanto no frontend)
+node_modules/
+
+# Next.js (arquivos de build/gerados automaticamente)
+.next/
+frontend/.next/
+
+# Arquivos de ambiente e chaves (segurança)
+.env
+.env*.local
+
+# Logs e arquivos de sistema
+*.log
+.DS_Store
+.vscode/

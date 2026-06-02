@@ -60,6 +60,8 @@ type Servico struct {
 	Descricao       string  `gorm:"column:descricao"                           json:"descricao"`
 	IDProjeto       uint    `gorm:"column:id_projeto"                          json:"id_projeto"`
 	Projeto         Projeto `gorm:"foreignKey:IDProjeto;references:IDProjeto"  json:"projeto,omitempty"`
+
+	Mecanicos []Mecanico `gorm:"many2many:realiza;joinForeignKey:IDServico;joinReferences:IDMecanico" json:"mecanicos,omitempty"`
 }
 
 func (Servico) TableName() string { return "servico" }
@@ -128,16 +130,16 @@ type UsoPeca struct {
 func (UsoPeca) TableName() string { return "uso_peca" }
 
 type MecanicoServico struct {
-	IDServico  uint     `gorm:"column:id_servico"                             json:"id_servico"`
+	IDServico  uint     `gorm:"primaryKey;column:id_servico"                             json:"id_servico"`
 	Servico    Servico  `gorm:"foreignKey:IDServico;references:IDServico"     json:"servico,omitempty"`
-	IDMecanico uint     `gorm:"column:id_mecanico"                            json:"id_mecanico"`
+	IDMecanico uint     `gorm:"primaryKey;column:id_mecanico"                            json:"id_mecanico"`
 	Mecanico   Mecanico `gorm:"foreignKey:IDMecanico;references:IDMecanico"   json:"mecanico,omitempty"`
 }
 
 func (MecanicoServico) TableName() string { return "realiza" }
 
 type UpgradeRestomod struct {
-	IDUpgradeRestomod  uint      `gorm:"foreignKey;autoIncrement;column:id_upgrade_restomod"         json:"id_upgrade_restomod"`
+	IDUpgradeRestomod  uint      `gorm:"primaryKey;autoIncrement;column:id_upgrade_restomod"         json:"id_upgrade_restomod"`
 	SistemaAlvo        string    `gorm:"column:sistema_alvo"                                         json:"sistema_alvo"`
 	VeiculoDoador      string    `gorm:"column:veiculo_doador"                                       json:"veiculo_doador"`
 	DescricaoAdaptacao string    `gorm:"column:descricao_adaptacao"                                  json:"descricao_adaptacao"`
@@ -149,25 +151,25 @@ type UpgradeRestomod struct {
 func (UpgradeRestomod) TableName() string { return "upgrade_restomod" }
 
 type UpgradeProjeto struct {
-	IDUpgradeRestomod uint            `gorm:"column:id_upgrade_restomod"                                       json:"id_upgrade_restomod"`
+	IDUpgradeRestomod uint            `gorm:"primaryKey;column:id_upgrade_restomod"                                       json:"id_upgrade_restomod"`
 	UpgradeRestomod   UpgradeRestomod `gorm:"foreignKey:IDUpgradeRestomod;references:IDUpgradeRestomod"        json:"upgrade_restomod,omitempty"`
-	IDProjeto         uint            `gorm:"column:id_projeto"                                                json:"id_projeto"`
+	IDProjeto         uint            `gorm:"primaryKey;column:id_projeto"                                                json:"id_projeto"`
 	Projeto           Projeto         `gorm:"foreignKey:IDProjeto;references:IDProjeto"                        json:"oficina,omitempty"`
 }
 
 func (UpgradeProjeto) TableName() string { return "contempla" }
 
 type FornecedorPeca struct {
-	IDPeca       uint       `gorm:"column:id_peca"                                  json:"id_peca"`
-	Peca         Peca       `gorm	:"foreignKey:IDPeca;references:IDPeca"             json:"peca,omitempty"`
-	IDFornecedor uint       `gorm:"column:id_fornecedor"                            json:"id_fornecedor"`
+	IDPeca       uint       `gorm:"primaryKey;column:id_peca"                                  json:"id_peca"`
+	Peca         Peca       `gorm:"foreignKey:IDPeca;references:IDPeca"             json:"peca,omitempty"`
+	IDFornecedor uint       `gorm:"primaryKey;column:id_fornecedor"                            json:"id_fornecedor"`
 	Fornecedor   Fornecedor `gorm:"foreignKey:IDFornecedor;references:IDFornecedor"  json:"fornecedor,omitempty"`
 }
 
-func (FornecedorPeca) Tables() string { return "fornece" }
+func (FornecedorPeca) TableName() string { return "fornece" }
 
 type Inspecao struct {
-	IDInspecao   uint      `gorm:"column:id_inspecao"                            json:"id_inspecao"`
+	IDInspecao   uint      `gorm:"primaryKey;autoIncrement;column:id_inspecao"   json:"id_inspecao"`
 	DataInspecao time.Time `gorm:"column:data_inspecao"                          json:"data_inspecao"`
 	Tipo         string    `gorm:"column:tipo"                                   json:"tipo"`
 	Resultado    string    `gorm:"column:resultado"                              json:"resultado"`

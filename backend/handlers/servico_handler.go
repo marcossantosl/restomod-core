@@ -10,10 +10,19 @@ import (
 
 // ─── SERVIÇO ─────────────────────────────────────────────────────
 
+// func ListarServicos(c *gin.Context) {
+// 	var servicos []models.Servico
+// 	config.DB.Preload("Projeto").Find(&servicos)
+// 	c.JSON(http.StatusOK, servicos)
+// }
+
 func ListarServicos(c *gin.Context) {
 	var servicos []models.Servico
-	config.DB.Preload("Projeto").Find(&servicos)
-	c.JSON(http.StatusOK, servicos)
+	config.DB.
+		Preload("Projeto").
+		Preload("Mecanicos"). // ← precisa existir no model
+		Find(&servicos)
+	c.JSON(200, servicos)
 }
 
 func BuscarServico(c *gin.Context) {
