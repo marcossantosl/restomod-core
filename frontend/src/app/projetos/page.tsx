@@ -39,7 +39,8 @@ export default function ProjetosPage() {
   }
 
   const columns = [
-     { key: 'titulo',        label: 'Titulo' },
+  { key: 'id_projeto',        label: 'ID',readOnly: true },
+  { key: 'titulo',            label: 'Titulo' },
   { key: 'categoria_projeto', label: 'Categoria' },
   { key: 'data_inicio',       label: 'Início',   type: 'date' as const },
   { key: 'data_previsao',     label: 'Previsão', type: 'date' as const },

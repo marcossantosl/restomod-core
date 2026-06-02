@@ -2,14 +2,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { Pencil, Trash2, Plus, X, Check, Search, ChevronDown, CheckSquare, Square } from 'lucide-react'
 
-// 1. Adicionado 'multi-select' e 'render'
 interface Column {
   key: string
   label: string
   type?: 'text' | 'number' | 'date' | 'email' | 'select' | 'multi-select'
   editKey?: string
   options?: { label: string, value: string | number }[]
-  render?: (row: any) => React.ReactNode // Função customizada para desenhar a célula
+  render?: (row: any) => React.ReactNode 
+  readOnly?: boolean // <-- ADICIONADO: Suporte para colunas auto-increment ou bloqueadas
 }
 
 interface CrudTableProps {
@@ -72,7 +72,7 @@ function SearchableSelect({ options, value, onChange }: { options: any[], value:
   )
 }
 
-// --- NOVO: Multi-Select (N:N) ---
+// --- Multi-Select (N:N) ---
 function MultiSearchableSelect({ options, value = [], onChange }: { options: any[], value: any[], onChange: (val: any[]) => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -87,8 +87,6 @@ function MultiSearchableSelect({ options, value = [], onChange }: { options: any
   }, [])
 
   const filteredOptions = options.filter(opt => opt.label.toLowerCase().includes(search.toLowerCase()))
-  
-  // Array de valores seguros
   const safeValue = Array.isArray(value) ? value : []
   const labelText = safeValue.length > 0 ? `${safeValue.length} selecionado(s)` : "Selecione..."
 
@@ -128,7 +126,6 @@ function MultiSearchableSelect({ options, value = [], onChange }: { options: any
     </div>
   )
 }
-// -----------------------------------------------------
 
 export default function CrudTable({
   title, data, columns, idKey,
@@ -151,7 +148,6 @@ export default function CrudTable({
     return row[key] ?? '—'
   }
 
-  // Renderiza o input correto baseado no tipo
   const renderInput = (c: Column, itemState: any, setItemState: any) => {
     const valKey = c.editKey || c.key
     
@@ -162,12 +158,22 @@ export default function CrudTable({
       return <MultiSearchableSelect options={c.options} value={itemState[valKey]} onChange={(val) => setItemState({ ...itemState, [valKey]: val })} />
     }
     
+    // AJUSTE REALIZADO: Mescla estilos visuais de desabilitado e bloqueia a digitação caso a coluna seja readOnly
     return (
       <input
-        style={inputStyle}
+        style={{
+          ...inputStyle,
+          ...(c.readOnly ? { 
+            background: 'rgba(0, 0, 0, 0.2)', 
+            cursor: 'not-allowed', 
+            color: 'var(--text-muted)',
+            borderColor: 'transparent'
+          } : {})
+        }}
         type={c.type || 'text'}
-        placeholder={c.label}
+        placeholder={c.readOnly ? 'Auto' : c.label}
         value={itemState[c.key] || ''}
+        disabled={c.readOnly}
         onChange={e => setItemState({ ...itemState, [c.key]: c.type === 'number' ? Number(e.target.value) : e.target.value })}
       />
     )
@@ -217,7 +223,7 @@ export default function CrudTable({
                   <td key={c.key} style={{ padding: '10px 16px', color: 'var(--text)' }}>
                     {editing?.[idKey] === row[idKey] 
                       ? renderInput(c, editing, setEditing) 
-                      : (c.render ? c.render(row) : <span>{getValue(row, c.key)}</span>) // Usa o render customizado se existir
+                      : (c.render ? c.render(row) : <span>{getValue(row, c.key)}</span>)
                     }
                   </td>
                 ))}
@@ -230,7 +236,15 @@ export default function CrudTable({
                       </>
                     ) : (
                       <>
-                        <button onClick={() => { setEditing({ ...row }); setCreating(false) }} style={{ ...iconBtn, color: 'var(--text-muted)' }}><Pencil size={14} /></button>
+                        <button onClick={() => { 
+                          if (setEditing.name === 'handleStartEdit' || setEditing.toString().includes('id_mecanico')) {
+                            setEditing(row);
+                          } else {
+                            const idsMecanicos = row.mecanicos ? row.mecanicos.map((m: any) => m.id_mecanico) : [];
+                            setEditing({ ...row, id_mecanico: idsMecanicos });
+                          }
+                          setCreating(false);
+                        }} style={{ ...iconBtn, color: 'var(--text-muted)' }}><Pencil size={14} /></button>
                         <button onClick={() => onDelete(row[idKey])} style={{ ...iconBtn, color: 'var(--danger)' }}><Trash2 size={14} /></button>
                       </>
                     )}
@@ -245,7 +259,6 @@ export default function CrudTable({
   )
 }
 
-// Estilos extraídos para limpar o código
 const btnNovoStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 7, padding: '10px 18px', fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, cursor: 'pointer', textTransform: 'uppercase' }
 const thStyle: React.CSSProperties = { padding: '12px 16px', textAlign: 'left', fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }
 const iconBtn: React.CSSProperties = { background: 'var(--bg-100)', border: '1px solid var(--border)', borderRadius: 5, padding: '5px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'all 0.15s' }

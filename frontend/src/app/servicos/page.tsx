@@ -74,6 +74,7 @@ export default function ServicosPage() {
   }
 
   const columns = [
+      { key: 'id_servico',     label: 'ID' },
     { key: 'categoria',        label: 'Categoria' },
     { key: 'descricao',        label: 'Descrição' },
     { key: 'horas_estimadas',  label: 'Hrs Est.', type: 'number' as const },

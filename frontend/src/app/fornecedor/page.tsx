@@ -4,28 +4,27 @@ import api from '@/lib/api'
 import CrudTable from '@/components/CrudTable'
 
 const columns = [
+  { key: 'id_fornecedor',     label: 'ID' },
   { key: 'nome',     label: 'Nome' },
-  { key: 'cpf',      label: 'CPF' },
-  { key: 'email',    label: 'Email', type: 'email' as const },
-  { key: 'telefone', label: 'Telefone' },
-  { key: 'endereco', label: 'Endereço' },
+  { key: 'contato',    label: 'Contato'},
+  { key: 'especialidade', label: 'Especialidade' },
 ]
 
-export default function ClientesPage() {
+export default function FornecedorPage() {
   const [data, setData]       = useState<any[]>([])
   const [editing, setEditing] = useState<any | null>(null)
   const [creating, setCreating] = useState(false)
   const [newItem, setNewItem] = useState<any>({})
 
-  const load = () => api.get('/api/clientes').then(r => setData(r.data))
+  const load = () => api.get('/api/fornecedor').then(r => setData(r.data))
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
     if (item.id_cliente) {
-      await api.put(`/api/clientes/${item.id_cliente}`, item)
+      await api.put(`/api/fornecedor/${item.id_cliente}`, item)
       setEditing(null)
     } else {
-      await api.post('/api/clientes', item)
+      await api.post('/api/fornecedor', item)
       setCreating(false)
       setNewItem({})
     }
@@ -33,18 +32,18 @@ export default function ClientesPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (confirm('Deseja deletar este cliente?')) {
-      await api.delete(`/api/clientes/${id}`)
+    if (confirm('Deseja deletar este fornecedor?')) {
+      await api.delete(`/api/fornecedor/${id}`)
       load()
     }
   }
 
   return (
     <CrudTable
-      title="Clientes"
+      title="Fornecedor"
       data={data}
       columns={columns}
-      idKey="id_cliente"
+      idKey="id_fornecedor"
       onSave={handleSave}
       onDelete={handleDelete}
       editing={editing}

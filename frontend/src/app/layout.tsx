@@ -13,6 +13,7 @@ const nav = [
   { href: '/clientes',          label: 'Clientes',                  icon: Users },
   { href: '/projetos',          label: 'Projetos',                  icon: Folder },
   { href: '/historico_projeto', label: 'Histórico Projeto',         icon: Clock },
+  { href: '/upgrade_restomod',  label: 'Upgrade Projeto',           icon: Clock },
   { href: '/veiculos',          label: 'Veículos',                  icon: Car },
   { href: '/mecanicos',         label: 'Mecânicos',                 icon: UserCog },
   { href: '/oficinas',          label: 'Oficinas',                  icon: MapPin },

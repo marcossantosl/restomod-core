@@ -4,7 +4,7 @@ import api from '@/lib/api'
 import CrudTable from '@/components/CrudTable'
 
 const columns = [
-  { key: 'nome',     label: 'Nome' },
+  { key: 'nome',     label: 'Nome',readOnly: true },
   { key: 'cpf',      label: 'CPF' },
   { key: 'email',    label: 'Email', type: 'email' as const },
   { key: 'telefone', label: 'Telefone' },

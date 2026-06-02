@@ -94,9 +94,10 @@ type Peca struct {
 func (Peca) TableName() string { return "peca" }
 
 type Fornecedor struct {
-	IDFornecedor  uint   `gorm:"primaryKey;autoIncrement;column:id_fornecedor"   json:"id_fornecedor"`
-	Nome          string `gorm:"column:nome"                                     json:"nome"`
-	Especialidade string `gorm:"column:especialidade" 						     json:"especialidade"`
+	IDFornecedor uint   `gorm:"primaryKey;autoIncrement;column:id_fornecedor"   json:"id_fornecedor"`
+	Nome         string `gorm:"column:nome"                                     json:"nome"`
+	//Especialidade string `gorm:"column:especialidade" 						     json:"especialidade"`
+	Especialidade string `gorm:"column:especialidade"                            json:"especialidade"`
 	Contato       string `gorm:"column:contato"                                  json:"contato"`
 }
 
@@ -139,13 +140,13 @@ type MecanicoServico struct {
 func (MecanicoServico) TableName() string { return "realiza" }
 
 type UpgradeRestomod struct {
-	IDUpgradeRestomod  uint      `gorm:"primaryKey;autoIncrement;column:id_upgrade_restomod"         json:"id_upgrade_restomod"`
-	SistemaAlvo        string    `gorm:"column:sistema_alvo"                                         json:"sistema_alvo"`
-	VeiculoDoador      string    `gorm:"column:veiculo_doador"                                       json:"veiculo_doador"`
-	DescricaoAdaptacao string    `gorm:"column:descricao_adaptacao"                                  json:"descricao_adaptacao"`
-	WHPFinal           string    `gorm:"column:whp_final"                                            json:"whp_final"`
-	KGFMFinal          string    `gorm:"column:kgfm_final"                                           json:"kgfm_final"`
-	DataUpgrade        time.Time `gorm:"column:data_upgrade"                                         json:"data_upgrade"`
+	IDUpgradeRestomod  uint   `gorm:"primaryKey;autoIncrement;column:id_upgrade_restomod"         json:"id_upgrade_restomod"`
+	SistemaAlvo        string `gorm:"column:sistema_alvo"                                         json:"sistema_alvo"`
+	VeiculoDoador      string `gorm:"column:veiculo_doador"                                       json:"veiculo_doador"`
+	DescricaoAdaptacao string `gorm:"column:descricao_adaptacao"                                  json:"descricao_adaptacao"`
+	WHPFinal           string `gorm:"column:whp_final"                                            json:"whp_final"`
+	KGFMFinal          string `gorm:"column:kgfm_final"                                           json:"kgfm_final"`
+	DataUpgrade        string `gorm:"column:data_upgrade"                                         json:"data_upgrade"`
 }
 
 func (UpgradeRestomod) TableName() string { return "upgrade_restomod" }

@@ -4,6 +4,7 @@ import api from '@/lib/api'
 import CrudTable from '@/components/CrudTable'
 
 const columns = [
+  { key: 'id_cliente',     label: 'ID',readOnly: true},
   { key: 'nome',     label: 'Nome' },
   { key: 'cpf',      label: 'CPF' },
   { key: 'email',    label: 'Email', type: 'email' as const },
