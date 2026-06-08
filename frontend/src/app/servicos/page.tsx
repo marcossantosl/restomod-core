@@ -64,17 +64,9 @@ export default function ServicosPage() {
     }
   }
 
-  const handleStartEdit = (row: any) => {
-    if (row) {
-      const idsMecanicos = row.mecanicos ? row.mecanicos.map((m: any) => m.id_mecanico) : [];
-      setEditing({ ...row, id_mecanico: idsMecanicos });
-    } else {
-      setEditing(null);
-    }
-  }
 
   const columns = [
-      { key: 'id_servico',     label: 'ID' },
+      { key: 'id_servico',     label: 'ID',readOnly: true},
     { key: 'categoria',        label: 'Categoria' },
     { key: 'descricao',        label: 'Descrição' },
     { key: 'horas_estimadas',  label: 'Hrs Est.', type: 'number' as const },
@@ -132,7 +124,7 @@ export default function ServicosPage() {
       title="Serviços"
       data={data} columns={columns} idKey="id_servico"
       onSave={handleSave} onDelete={handleDelete}
-      editing={editing} setEditing={handleStartEdit}
+      editing={editing} setEditing={setEditing}
       creating={creating} setCreating={setCreating}
       newItem={newItem} setNewItem={setNewItem}
     />

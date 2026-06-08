@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"projeto-oficina/config"
 	"projeto-oficina/models"
 
@@ -9,8 +10,13 @@ import (
 
 func ListarInspecao(c *gin.Context) {
 	var inspecao []models.Inspecao
-	config.DB.Find(&inspecao)
-	c.JSON(200, inspecao)
+	// Preload carrega o projeto e os mecânicos associados na listagem
+	if err := config.DB.Preload("Veiculo").Preload("Mecanico").Find(&inspecao).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erro": "Erro ao listar inspeção"})
+		return
+	}
+
+	c.JSON(http.StatusOK, inspecao)
 }
 
 func BuscarInspecao(c *gin.Context) {

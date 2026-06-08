@@ -65,7 +65,7 @@ func SetupRoutes(r *gin.Engine) {
 	{
 		usoPeca.GET("", handlers.ListarUsoPeca)
 		usoPeca.GET("/:id", handlers.BuscarUsoPeca)
-		usoPeca.POST("", handlers.InserirUsoPeca)
+		usoPeca.POST("", handlers.CriarUsoPeca)
 		usoPeca.PUT("/:id", handlers.AtualizarUsoPeca)
 		usoPeca.DELETE("/:id", handlers.DeletarUsoPeca)
 	}
@@ -96,6 +96,10 @@ func SetupRoutes(r *gin.Engine) {
 		fornecedorPeca.GET("", handlers.ListarFornecedorPeca)
 		fornecedorPeca.POST("", handlers.CriarFornecedorPeca)
 		fornecedorPeca.DELETE("", handlers.DeletarFornecedorPeca)
+
+		// A ROTA NOVA ENTRA AQUI!
+		// Como já está no grupo, ela vira automaticamente /api/fornecedorpeca/limpar
+		fornecedorPeca.DELETE("/limpar", handlers.LimparFornecedoresDaPeca)
 	}
 	// ─── Historico Projeto ──────────────────────────────────────────────
 	historicoProjeto := api.Group("/historicoprojeto")
@@ -123,6 +127,7 @@ func SetupRoutes(r *gin.Engine) {
 		mecanicoServico.GET("", handlers.ListarMecanicoServico)
 		mecanicoServico.POST("", handlers.CriarMecanicoServico)
 		mecanicoServico.DELETE("", handlers.DeletarMecanicoServico)
+		mecanicoServico.DELETE("/limpar", handlers.LimparMecanicosDoServico)
 	}
 
 	// ─── Oficina ──────────────────────────────────────────────
@@ -133,14 +138,6 @@ func SetupRoutes(r *gin.Engine) {
 		oficina.POST("", handlers.CriarOficina)
 		oficina.PUT("/:id", handlers.AtualizarOficina)
 		oficina.DELETE("/:id", handlers.DeletarOficina)
-	}
-
-	// ─── Upgrade Projeto (contempla) ──────────────────────────────────────────────
-	upgradeProjeto := api.Group("/upgradeprojeto")
-	{
-		upgradeProjeto.GET("", handlers.ListarUpgradeProjeto)
-		upgradeProjeto.POST("", handlers.CriarUpgradeProjeto)
-		upgradeProjeto.DELETE("", handlers.DeletarUpgradeProjeto)
 	}
 
 	// ─── Upgrade Restomod  ──────────────────────────────────────────────

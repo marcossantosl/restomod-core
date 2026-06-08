@@ -59,7 +59,7 @@ export default function ProjetosPage() {
    label: 'Oficina responsável',
    type: 'select' as const,
    editKey: 'id_oficina',
-   options: oficina.map(m => ({label: m.nome, value: m.id_oficina}))
+   options: oficina.map(o => ({label: o.nome, value: o.id_oficina}))
   }
   
 ]

@@ -9,7 +9,7 @@ interface Column {
   editKey?: string
   options?: { label: string, value: string | number }[]
   render?: (row: any) => React.ReactNode 
-  readOnly?: boolean // <-- ADICIONADO: Suporte para colunas auto-increment ou bloqueadas
+  readOnly?: boolean
 }
 
 interface CrudTableProps {
@@ -57,7 +57,7 @@ function SearchableSelect({ options, value, onChange }: { options: any[], value:
           </div>
           <div style={{ maxHeight: 180, overflowY: 'auto' }}>
             {filteredOptions.length > 0 ? filteredOptions.map(opt => (
-              <div key={opt.value} onClick={() => { onChange(opt.value); setIsOpen(false); setSearch('') }}
+              <div key={opt.value} onClick={(e) => { e.stopPropagation(); onChange(opt.value); setIsOpen(false); setSearch('') }}
                 style={{ ...optionItemStyle, background: value === opt.value ? 'var(--accent)' : 'transparent', color: value === opt.value ? '#fff' : 'var(--text)' }}
                 onMouseEnter={e => { if (value !== opt.value) e.currentTarget.style.background = 'rgba(255,107,10,0.1)' }}
                 onMouseLeave={e => { if (value !== opt.value) e.currentTarget.style.background = 'transparent' }}
@@ -110,7 +110,7 @@ function MultiSearchableSelect({ options, value = [], onChange }: { options: any
             {filteredOptions.length > 0 ? filteredOptions.map(opt => {
               const isSelected = safeValue.includes(opt.value)
               return (
-                <div key={opt.value} onClick={() => toggleOption(opt.value)}
+                <div key={opt.value} onClick={(e) => { e.stopPropagation(); toggleOption(opt.value); }}
                   style={{ ...optionItemStyle, display: 'flex', alignItems: 'center', gap: 8, background: isSelected ? 'rgba(255,107,10,0.05)' : 'transparent' }}
                   onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(255,107,10,0.1)' }}
                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
@@ -158,7 +158,6 @@ export default function CrudTable({
       return <MultiSearchableSelect options={c.options} value={itemState[valKey]} onChange={(val) => setItemState({ ...itemState, [valKey]: val })} />
     }
     
-    // AJUSTE REALIZADO: Mescla estilos visuais de desabilitado e bloqueia a digitação caso a coluna seja readOnly
     return (
       <input
         style={{
@@ -237,12 +236,21 @@ export default function CrudTable({
                     ) : (
                       <>
                         <button onClick={() => { 
-                          if (setEditing.name === 'handleStartEdit' || setEditing.toString().includes('id_mecanico')) {
-                            setEditing(row);
-                          } else {
-                            const idsMecanicos = row.mecanicos ? row.mecanicos.map((m: any) => m.id_mecanico) : [];
-                            setEditing({ ...row, id_mecanico: idsMecanicos });
-                          }
+                          // EXTRAÇÃO INTELIGENTE: A própria tabela busca os objetos aninhados e converte para IDs
+                          const editData = { ...row };
+                          columns.forEach(c => {
+                            if (c.type === 'multi-select' && c.editKey) {
+                              const arrayProp = Object.keys(row).find(k => Array.isArray(row[k]) && row[k].length > 0 && row[k][0][c.editKey]);
+                              if (arrayProp) {
+                                editData[c.editKey] = row[arrayProp].map((item: any) => item[c.editKey]);
+                              } else if (Array.isArray(row.mecanicos) && c.editKey === 'id_mecanico') {
+                                editData[c.editKey] = row.mecanicos.map((m: any) => m.id_mecanico);
+                              } else {
+                                editData[c.editKey] = [];
+                              }
+                            }
+                          });
+                          setEditing(editData);
                           setCreating(false);
                         }} style={{ ...iconBtn, color: 'var(--text-muted)' }}><Pencil size={14} /></button>
                         <button onClick={() => onDelete(row[idKey])} style={{ ...iconBtn, color: 'var(--danger)' }}><Trash2 size={14} /></button>

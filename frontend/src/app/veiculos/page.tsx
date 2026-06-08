@@ -9,6 +9,7 @@ const columns = [
   { key: 'modelo',         label: 'Modelo' },
   { key: 'ano_fabricacao', label: 'Ano', type: 'number' as const },
   { key: 'chassi',         label: 'Chassi' },
+  { key: 'placa',         label: 'Placa' },
   { key: 'status',         label: 'Status' },
   { key: 'categoria',      label: 'Categoria' },
   { key: 'whp_original',   label: 'WHP', type: 'number' as const },

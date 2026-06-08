@@ -8,55 +8,69 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//GET/api/upgraderestomod
-
+// GET /api/upgraderestomod
 func ListarUpgradeRestomod(c *gin.Context) {
 	var upgradeRestomod []models.UpgradeRestomod
-	config.DB.Find(upgradeRestomod)
-	c.JSON(200, upgradeRestomod)
+
+	// CORREÇÃO: Adicionado o '&' para passar o ponteiro e o Preload para carregar o projeto relacionado
+	if err := config.DB.Preload("Projeto").Find(&upgradeRestomod).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erro": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, upgradeRestomod)
 }
 
-//GET/api/upgraderestomod/:id
-
+// GET /api/upgraderestomod/:id
 func BuscarUpgradeRestomod(c *gin.Context) {
 	var upgradeRestomod models.UpgradeRestomod
-	if err := config.DB.First(&upgradeRestomod, c.Param("id")).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"erro": "usuário não encontrado"})
+	// Adicionado Preload aqui também caso precise ver o projeto no detalhe
+	if err := config.DB.Preload("Projeto").First(&upgradeRestomod, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"erro": "Upgrade Restomod não encontrado"})
 		return
 	}
 	c.JSON(http.StatusOK, upgradeRestomod)
 }
 
-//POST/api/upgraderestomod/:id
-
+// POST /api/upgraderestomod
 func CriarUpgradeRestomod(c *gin.Context) {
 	var upgradeRestomod models.UpgradeRestomod
 	if err := c.ShouldBindJSON(&upgradeRestomod); err != nil {
-		c.JSON(400, gin.H{"erro": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"erro": err.Error()})
 		return
 	}
-	c.JSON(201, upgradeRestomod)
+
+	// CORREÇÃO: Você não estava salvando no banco de dados de fato!
+	if err := config.DB.Create(&upgradeRestomod).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erro": "Falha ao salvar no banco"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, upgradeRestomod)
 }
 
-//PUT/api/upgraderestomod/:id
-
+// PUT /api/upgraderestomod/:id
 func AtualizarUpgradeRestomod(c *gin.Context) {
 	var upgradeRestomod models.UpgradeRestomod
 	if err := config.DB.First(&upgradeRestomod, c.Param("id")).Error; err != nil {
-		c.JSON(404, gin.H{"erro": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"erro": err.Error()})
 		return
 	}
-	c.ShouldBindJSON(&upgradeRestomod)
+
+	if err := c.ShouldBindJSON(&upgradeRestomod); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"erro": err.Error()})
+		return
+	}
+
 	config.DB.Save(&upgradeRestomod)
 	c.JSON(http.StatusOK, upgradeRestomod)
 }
 
-//DELETE/api/upgraderestomod/:id
-
+// DELETE /api/upgraderestomod/:id
 func DeletarUpgradeRestomod(c *gin.Context) {
 	var upgradeRestomod models.UpgradeRestomod
 	if err := config.DB.First(&upgradeRestomod, c.Param("id")).Error; err != nil {
-		c.JSON(404, gin.H{"erro": "Upgrade Restomod não encontrado"})
+		c.JSON(http.StatusNotFound, gin.H{"erro": "Upgrade Restomod não encontrado"})
 		return
 	}
 	config.DB.Delete(&upgradeRestomod)

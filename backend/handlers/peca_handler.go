@@ -12,7 +12,7 @@ import (
 
 func ListarPecas(c *gin.Context) {
 	var pecas []models.Peca
-	config.DB.Find(&pecas)
+	config.DB.Preload("Fornecedores").Find(&pecas)
 	c.JSON(http.StatusOK, pecas)
 }
 

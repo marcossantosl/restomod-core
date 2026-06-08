@@ -1,7 +1,5 @@
 package models
 
-import "time"
-
 type Cliente struct {
 	IDCliente uint   `gorm:"primaryKey;autoIncrement;column:id_cliente" json:"id_cliente"`
 	Nome      string `gorm:"column:nome;not null"                       json:"nome"`
@@ -61,7 +59,8 @@ type Servico struct {
 	IDProjeto       uint    `gorm:"column:id_projeto"                          json:"id_projeto"`
 	Projeto         Projeto `gorm:"foreignKey:IDProjeto;references:IDProjeto"  json:"projeto,omitempty"`
 
-	Mecanicos []Mecanico `gorm:"many2many:realiza;joinForeignKey:IDServico;joinReferences:IDMecanico" json:"mecanicos,omitempty"`
+	// Adicionamos as constraints de ON DELETE CASCADE para ambas as pontas da tabela associativa
+	Mecanicos []Mecanico `gorm:"many2many:realiza;joinForeignKey:IDServico;joinReferences:IDMecanico;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"mecanicos,omitempty"`
 }
 
 func (Servico) TableName() string { return "servico" }
@@ -70,6 +69,7 @@ type Veiculo struct {
 	IDVeiculo     uint   `gorm:"primaryKey;autoIncrement;column:id_veiculo" json:"id_veiculo"`
 	Marca         string `gorm:"column:marca"                               json:"marca"`
 	Modelo        string `gorm:"column:modelo"                              json:"modelo"`
+	Placa         string `gorm:"column:placa"                                json:"placa"`
 	Chassi        string `gorm:"column:chassi"                              json:"chassi"`
 	AnoFabricacao int    `gorm:"column:ano_fabricacao"                      json:"ano_fabricacao"`
 	Status        string `gorm:"column:status"                              json:"status"`
@@ -89,6 +89,8 @@ type Peca struct {
 	NumeroPeca      int     `gorm:"column:numero_peca"                         json:"numero_peca"`
 	PrecoReferencia float64 `gorm:"column:preco_referencia"                    json:"preco_referencia"`
 	TipoPeca        string  `gorm:"column:tipo_peca"                           json:"tipo_peca"`
+
+	Fornecedores []Fornecedor `gorm:"many2many:fornece;joinForeignKey:IDPeca;joinReferences:IDFornecedor;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"fornecedores,omitempty"`
 }
 
 func (Peca) TableName() string { return "peca" }
@@ -104,23 +106,23 @@ type Fornecedor struct {
 func (Fornecedor) TableName() string { return "fornecedor" }
 
 type HistoricoProjeto struct {
-	IDHistoricoProjeto uint      `gorm:"primaryKey;autoIncrement;column:id_fornecedor" json:"id_historico"`
-	Status             string    `gorm:"column:status"                                  json:"status"`
-	Data               time.Time `gorm:"column:data"                                   json:"data"`
-	KMRegistrado       int       `gorm:"column:km_registrado"                          json:"km_registrado"`
-	TipoServico        string    `gorm:"column:tipo_servico"                           json:"tipo_servico"`
-	Descricao          string    `gorm:"column:descricao"                              json:"descricao"`
-	IDProjeto          uint      `gorm:"column:id_projeto"                             json:"id_projeto"`
-	Projeto            Projeto   `gorm:"foreignKey:IDProjeto;references:IDProjeto"     json:"oficina,omitempty"`
-	IDVeiculo          uint      `gorm:"column:id_veiculo"                             json:"id_veiculo"`
-	Veiculo            Veiculo   `gorm:"foreignKey:IDVeiculo;references:IDVeiculo"     json:"veiculo,omitempty"`
+	IDHistoricoProjeto uint    `gorm:"primaryKey;autoIncrement;column:id_historico" json:"id_historico"`
+	Status             string  `gorm:"column:status"                                  json:"status"`
+	Data               string  `gorm:"column:data"                                   json:"data"`
+	KMRegistrado       int     `gorm:"column:km_registrado"                          json:"km_registrado"`
+	TipoServico        string  `gorm:"column:tipo_servico"                           json:"tipo_servico"`
+	Descricao          string  `gorm:"column:descricao"                              json:"descricao"`
+	IDProjeto          uint    `gorm:"column:id_projeto"                             json:"id_projeto"`
+	Projeto            Projeto `gorm:"foreignKey:IDProjeto;references:IDProjeto"     json:"projeto,omitempty"`
+	IDVeiculo          uint    `gorm:"column:id_veiculo"                             json:"id_veiculo"`
+	Veiculo            Veiculo `gorm:"foreignKey:IDVeiculo;references:IDVeiculo"     json:"veiculo,omitempty"`
 }
 
 func (HistoricoProjeto) TableName() string { return "historico_projeto" }
 
 type UsoPeca struct {
 	IDUsoPeca  uint    `gorm:"primaryKey;autoIncrement;column:id_uso_peca"   json:"id_uso_peca"`
-	ValorVenda int     `gorm:"column:valor_venda"                            json:"valor_venda"`
+	ValorVenda float64 `gorm:"column:valor_venda"                            json:"valor_venda"`
 	Quantidade int     `gorm:"column:quantidade"                             json:"quantidade"`
 	IDPeca     uint    `gorm:"column:id_peca"                                json:"id_peca"`
 	Peca       Peca    `gorm:"foreignKey:IDPeca;references:IDPeca"           json:"peca,omitempty"`
@@ -140,25 +142,18 @@ type MecanicoServico struct {
 func (MecanicoServico) TableName() string { return "realiza" }
 
 type UpgradeRestomod struct {
-	IDUpgradeRestomod  uint   `gorm:"primaryKey;autoIncrement;column:id_upgrade_restomod"         json:"id_upgrade_restomod"`
-	SistemaAlvo        string `gorm:"column:sistema_alvo"                                         json:"sistema_alvo"`
-	VeiculoDoador      string `gorm:"column:veiculo_doador"                                       json:"veiculo_doador"`
-	DescricaoAdaptacao string `gorm:"column:descricao_adaptacao"                                  json:"descricao_adaptacao"`
-	WHPFinal           string `gorm:"column:whp_final"                                            json:"whp_final"`
-	KGFMFinal          string `gorm:"column:kgfm_final"                                           json:"kgfm_final"`
-	DataUpgrade        string `gorm:"column:data_upgrade"                                         json:"data_upgrade"`
+	IDUpgradeRestomod  uint    `gorm:"primaryKey;autoIncrement;column:id_upgrade_restomod"         json:"id_upgrade_restomod"`
+	SistemaAlvo        string  `gorm:"column:sistema_alvo"                                         json:"sistema_alvo"`
+	VeiculoDoador      string  `gorm:"column:veiculo_doador"                                       json:"veiculo_doador"`
+	DescricaoAdaptacao string  `gorm:"column:descricao_adaptacao"                                  json:"descricao_adaptacao"`
+	WHPFinal           string  `gorm:"column:whp_final"                                            json:"whp_final"`
+	KGFMFinal          string  `gorm:"column:kgfm_final"                                           json:"kgfm_final"`
+	DataUpgrade        string  `gorm:"column:data_upgrade"                                         json:"data_upgrade"`
+	IDProjeto          uint    `gorm:"column:id_projeto"                          json:"id_projeto"`
+	Projeto            Projeto `gorm:"foreignKey:IDProjeto;references:IDProjeto"  json:"projeto,omitempty"`
 }
 
 func (UpgradeRestomod) TableName() string { return "upgrade_restomod" }
-
-type UpgradeProjeto struct {
-	IDUpgradeRestomod uint            `gorm:"primaryKey;column:id_upgrade_restomod"                                       json:"id_upgrade_restomod"`
-	UpgradeRestomod   UpgradeRestomod `gorm:"foreignKey:IDUpgradeRestomod;references:IDUpgradeRestomod"        json:"upgrade_restomod,omitempty"`
-	IDProjeto         uint            `gorm:"primaryKey;column:id_projeto"                                                json:"id_projeto"`
-	Projeto           Projeto         `gorm:"foreignKey:IDProjeto;references:IDProjeto"                        json:"oficina,omitempty"`
-}
-
-func (UpgradeProjeto) TableName() string { return "contempla" }
 
 type FornecedorPeca struct {
 	IDPeca       uint       `gorm:"primaryKey;column:id_peca"                                  json:"id_peca"`
@@ -170,13 +165,15 @@ type FornecedorPeca struct {
 func (FornecedorPeca) TableName() string { return "fornece" }
 
 type Inspecao struct {
-	IDInspecao   uint      `gorm:"primaryKey;autoIncrement;column:id_inspecao"   json:"id_inspecao"`
-	DataInspecao time.Time `gorm:"column:data_inspecao"                          json:"data_inspecao"`
-	Tipo         string    `gorm:"column:tipo"                                   json:"tipo"`
-	Resultado    string    `gorm:"column:resultado"                              json:"resultado"`
-	Observacoes  string    `gorm:"column:observacoes"                           json:"observacoes"`
-	IDMecanico   uint      `gorm:"column:id_mecanico"                            json:"id_mecanico"`
-	Mecanico     Mecanico  `gorm:"foreignKey:IDMecanico;references:IDMecanico"   json:"mecanico,omitempty"`
-	IDVeiculo    uint      `gorm:"column:id_veiculo"                             json:"id_veiculo"`
-	Veiculo      Veiculo   `gorm:"foreignKey:IDVeiculo;references:IDVeiculo"     json:"veiculo,omitempty"`
+	IDInspecao   uint     `gorm:"primaryKey;autoIncrement;column:id_inspecao"   json:"id_inspecao"`
+	DataInspecao string   `gorm:"column:data_inspecao"                          json:"data_inspecao"`
+	Tipo         string   `gorm:"column:tipo"                                   json:"tipo"`
+	Resultado    string   `gorm:"column:resultado"                              json:"resultado"`
+	Observacoes  string   `gorm:"column:observacoes"                           json:"observacoes"`
+	IDMecanico   uint     `gorm:"column:id_mecanico"                            json:"id_mecanico"`
+	Mecanico     Mecanico `gorm:"foreignKey:IDMecanico;references:IDMecanico"   json:"mecanico,omitempty"`
+	IDVeiculo    uint     `gorm:"column:id_veiculo"                             json:"id_veiculo"`
+	Veiculo      Veiculo  `gorm:"foreignKey:IDVeiculo;references:IDVeiculo"     json:"veiculo,omitempty"`
 }
+
+func (Inspecao) TableName() string { return "inspecao" }

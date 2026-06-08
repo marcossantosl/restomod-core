@@ -33,7 +33,6 @@ func main() {
 		// Associativas por último (dependem das outras)
 		&models.MecanicoServico{},
 		&models.FornecedorPeca{},
-		&models.UpgradeProjeto{},
 		&models.UsoPeca{},
 	)
 

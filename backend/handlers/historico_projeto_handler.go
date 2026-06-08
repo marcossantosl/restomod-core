@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"projeto-oficina/config"
 	"projeto-oficina/models"
 
@@ -10,9 +11,16 @@ import (
 //GET /API/historicoprojeto  config.DB.Find
 
 func ListarHistoricoProjeto(c *gin.Context) {
-	var historicoprojeto []models.HistoricoProjeto
-	config.DB.Find(&historicoprojeto)
-	c.JSON(200, historicoprojeto)
+	var historicos []models.HistoricoProjeto
+
+	// CORREÇÃO CRUCIAL: Adicionado o .Preload para carregar os objetos agregados "Projeto" e "Veiculo"
+	// e o '&' na variável para evitar panics de reflexão
+	if err := config.DB.Preload("Projeto").Preload("Veiculo").Find(&historicos).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erro": "Erro ao listar históricos: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, historicos)
 }
 
 // GET /API/historicoprojeto/:id config.DB.First

@@ -1,20 +1,20 @@
 services:
 
   # ─── Banco de Dados ───────────────────────────────────────────
-  db:
-    image: postgres:16-alpine
-    container_name: oficina_db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: oficina_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks:
-      - oficina_net
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: oficina_db
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: 1234
+  #     POSTGRES_DB: oficina_db
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   networks:
+  #     - oficina_net
 
   # ─── Backend (Go + Gin) ───────────────────────────────────────
   backend:
@@ -32,8 +32,10 @@ services:
       PORT: 8080
     ports:
       - "8080:8080"
-    depends_on:
-      - db
+    extra_hosts:                     # <-- ADICIONE ESTAS DUAS LINHAS
+      - "host.docker.internal:host-gateway"
+    # depends_on:
+      # - db
     networks:
       - oficina_net
 

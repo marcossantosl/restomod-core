@@ -41,7 +41,7 @@ export default function MecanicosPage() {
 
   // 3. Array columns movido para dentro do componente para acessar o estado 'oficinas'
   const columns = [
-    { key: 'id_mecanico',     label: 'ID' },
+    { key: 'id_mecanico',     label: 'ID',readOnly: true },
     { key: 'nome',          label: 'Nome' },
     { key: 'cpf',           label: 'CPF' },
     { key: 'especialidade', label: 'Especialidade' },
