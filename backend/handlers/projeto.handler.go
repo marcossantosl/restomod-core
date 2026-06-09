@@ -12,13 +12,14 @@ import (
 
 func ListarProjetos(c *gin.Context) {
 	var projetos []models.Projeto
-	config.DB.Preload("Cliente").Preload("Oficina").Find(&projetos)
+	// Adicionado o Veículo no Preload para exibir na tabela
+	config.DB.Preload("Cliente").Preload("Oficina").Preload("Veiculo").Find(&projetos)
 	c.JSON(http.StatusOK, projetos)
 }
 
 func BuscarProjeto(c *gin.Context) {
 	var projeto models.Projeto
-	if err := config.DB.Preload("Cliente").Preload("Oficina").First(&projeto, c.Param("id")).Error; err != nil {
+	if err := config.DB.Preload("Cliente").Preload("Oficina").Preload("Veiculo").First(&projeto, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"erro": "Projeto não encontrado"})
 		return
 	}
@@ -31,7 +32,7 @@ func CriarProjeto(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"erro": err.Error()})
 		return
 	}
-	config.DB.Create(&projeto)
+	config.DB.Omit("Cliente", "Oficina", "Veiculo").Create(&projeto)
 	c.JSON(http.StatusCreated, projeto)
 }
 
@@ -42,7 +43,7 @@ func AtualizarProjeto(c *gin.Context) {
 		return
 	}
 	c.ShouldBindJSON(&projeto)
-	config.DB.Save(&projeto)
+	config.DB.Omit("Cliente", "Oficina", "Veiculo").Save(&projeto)
 	c.JSON(http.StatusOK, projeto)
 }
 

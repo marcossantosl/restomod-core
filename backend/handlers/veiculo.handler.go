@@ -12,13 +12,14 @@ import (
 
 func ListarVeiculos(c *gin.Context) {
 	var veiculos []models.Veiculo
-	config.DB.Find(&veiculos)
+	// Adicionado Preload para o frontend saber quem é o dono do carro
+	config.DB.Preload("Cliente").Find(&veiculos)
 	c.JSON(http.StatusOK, veiculos)
 }
 
 func BuscarVeiculo(c *gin.Context) {
 	var veiculo models.Veiculo
-	if err := config.DB.First(&veiculo, c.Param("id")).Error; err != nil {
+	if err := config.DB.Preload("Cliente").First(&veiculo, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"erro": "Veículo não encontrado"})
 		return
 	}
@@ -31,7 +32,8 @@ func CriarVeiculo(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"erro": err.Error()})
 		return
 	}
-	config.DB.Create(&veiculo)
+	// Omit impede o GORM de tentar criar um cliente novo sem querer
+	config.DB.Omit("Cliente").Create(&veiculo)
 	c.JSON(http.StatusCreated, veiculo)
 }
 
@@ -42,7 +44,7 @@ func AtualizarVeiculo(c *gin.Context) {
 		return
 	}
 	c.ShouldBindJSON(&veiculo)
-	config.DB.Save(&veiculo)
+	config.DB.Omit("Cliente").Save(&veiculo)
 	c.JSON(http.StatusOK, veiculo)
 }
 

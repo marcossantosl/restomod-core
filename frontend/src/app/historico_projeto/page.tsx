@@ -6,14 +6,12 @@ import CrudTable from '@/components/CrudTable'
 export default function HistoricoProjetoPage() {
   const [data, setData]         = useState<any[]>([])
   const [projetos, setProjetos] = useState<any[]>([])
-  const [veiculos, setVeiculos] = useState<any[]>([])
   const [editing, setEditing] = useState<any | null>(null)
   const [creating, setCreating] = useState(false)
   const [newItem, setNewItem] = useState<any>({})
 
   const load = () => {
   api.get('/api/historicoprojeto').then(r => setData(r.data))
-  api.get('/api/veiculos').then(r => setVeiculos(r.data))
   api.get('/api/projetos').then(r => setProjetos(r.data))
   }
   useEffect(() => { load() }, [])
@@ -44,20 +42,13 @@ const columns = [
   { key: 'km_registrado',    label: 'KM Registrado', type: 'number' as const },
   { key: 'tipo_servico', label: 'Tipo de Serviço' },
   { key: 'descricao', label: 'Descrição' },
-    {  key: 'projeto.titulo',
+
+  {  key: 'projeto.titulo',
    label: 'Projeto relacionado',
   type: 'select' as const,
    editKey: 'id_projeto',
    options: projetos.map(p => ({label: p.titulo, value: p.id_projeto}))
-  },
-
-    {
-    key: 'veiculo.modelo',
-   label: 'Veículo',
-    type: 'select' as const,
-    editKey: 'id_veiculo',
-    options: veiculos.map(v => ({label: v.placa, value: v.id_veiculo}))
-   }
+  }
 ]
 
   return (

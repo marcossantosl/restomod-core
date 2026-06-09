@@ -58,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               color: 'var(--accent)',
               textTransform: 'uppercase',
             }}>
-              Oficina
+              RESTOMOD-CORE
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
               Sistema de Gestão

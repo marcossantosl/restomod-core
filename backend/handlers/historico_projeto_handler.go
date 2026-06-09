@@ -8,14 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//GET /API/historicoprojeto  config.DB.Find
+// ─── HISTÓRICO DO PROJETO ────────────────────────────────────────
 
+// GET /api/historicoprojeto
 func ListarHistoricoProjeto(c *gin.Context) {
 	var historicos []models.HistoricoProjeto
 
-	// CORREÇÃO CRUCIAL: Adicionado o .Preload para carregar os objetos agregados "Projeto" e "Veiculo"
-	// e o '&' na variável para evitar panics de reflexão
-	if err := config.DB.Preload("Projeto").Preload("Veiculo").Find(&historicos).Error; err != nil {
+	if err := config.DB.Preload("Projeto").Find(&historicos).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erro": "Erro ao listar históricos: " + err.Error()})
 		return
 	}
@@ -23,46 +22,46 @@ func ListarHistoricoProjeto(c *gin.Context) {
 	c.JSON(http.StatusOK, historicos)
 }
 
-// GET /API/historicoprojeto/:id config.DB.First
+// GET /api/historicoprojeto/:id
 func BuscarHistoricoProjeto(c *gin.Context) {
 	var historicoprojeto models.HistoricoProjeto
-	if err := config.DB.First(&historicoprojeto, c.Param("id")).Error; err != nil {
-		c.JSON(404, gin.H{"erro": err.Error()})
+	if err := config.DB.Preload("Projeto.Veiculo").First(&historicoprojeto, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"erro": err.Error()})
 		return
 	}
-	c.JSON(200, historicoprojeto)
+	c.JSON(http.StatusOK, historicoprojeto)
 }
 
-// POST /API/historicoprojeto  config.DB.Create
+// POST /api/historicoprojeto
 func CriarHistoricoProjeto(c *gin.Context) {
 	var historicoprojeto models.HistoricoProjeto
 	if err := c.ShouldBindJSON(&historicoprojeto); err != nil {
-		c.JSON(400, gin.H{"erro": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"erro": err.Error()})
 		return
 	}
-	config.DB.Create(&historicoprojeto)
-	c.JSON(201, historicoprojeto)
+	config.DB.Omit("Projeto").Create(&historicoprojeto)
+	c.JSON(http.StatusCreated, historicoprojeto)
 }
 
-// PUT /API/historicoprojeto/:id config.DB.Save
+// PUT /api/historicoprojeto/:id
 func AtualizarHistoricoProjeto(c *gin.Context) {
 	var historicoprojeto models.HistoricoProjeto
 	if err := config.DB.First(&historicoprojeto, c.Param("id")).Error; err != nil {
-		c.JSON(404, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 	c.ShouldBindJSON(&historicoprojeto)
-	config.DB.Save(&historicoprojeto)
-	c.JSON(201, historicoprojeto)
+	config.DB.Omit("Projeto").Save(&historicoprojeto)
+	c.JSON(http.StatusOK, historicoprojeto)
 }
 
-// DELETE /historicoprojeto/:id config.DB.Delete
+// DELETE /api/historicoprojeto/:id
 func DeletarHistoricoProjeto(c *gin.Context) {
 	var historicoprojeto models.HistoricoProjeto
 	if err := config.DB.First(&historicoprojeto, c.Param("id")).Error; err != nil {
-		c.JSON(404, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 	config.DB.Delete(&historicoprojeto)
-	c.JSON(200, historicoprojeto)
+	c.JSON(http.StatusOK, historicoprojeto)
 }
