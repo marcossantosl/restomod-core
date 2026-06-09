@@ -76,6 +76,7 @@ export default function PecasPage() {
     { key: 'id_peca',          label: 'ID', readOnly: true },
     { key: 'nome',             label: 'Nome' },
     { key: 'fabricante',       label: 'Fabricante' },
+     { key: 'numero_peca',       label: 'Código' },
     { key: 'tipo_peca',        label: 'Tipo' },
     { key: 'origem',           label: 'Origem' },
     { key: 'estoque',          label: 'Estoque',  type: 'number' as const },

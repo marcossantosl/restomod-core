@@ -43,7 +43,8 @@ const columns = [
   { key: 'descricao_adaptacao', label: 'Descricao da Adaptacao' },
   { key: 'whp_final', label: 'WHP após upgrade'},
   { key: 'kgfm_final', label: 'Torque após upgrade'},
-  { key: 'data_upgrade', label: 'Data do upgrade', type: 'date' as const },
+  { key: 'data_upgrade_inicio', label: 'Data do upgrade Inicio', type: 'date' as const },
+  { key: 'data_upgrade_fim', label: 'Data do upgrade Fim', type: 'date' as const },
 
    {  key: 'projeto.titulo',
    label: 'Projeto relacionado',

@@ -14,7 +14,7 @@ func ListarServicos(c *gin.Context) {
 	var servicos []models.Servico
 
 	// Preload carrega o projeto e os mecânicos associados na listagem
-	if err := config.DB.Preload("Projeto").Preload("Mecanicos").Find(&servicos).Error; err != nil {
+	if err := config.DB.Preload("Projeto").Preload("Mecanicos").Preload("UpgradeRestomod").Find(&servicos).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"erro": "Erro ao listar serviços"})
 		return
 	}
@@ -50,36 +50,41 @@ func CriarServico(c *gin.Context) {
 	c.JSON(http.StatusCreated, servico)
 }
 
+// AtualizarServico atualiza apenas os campos primitivos de um serviço,
+// protegendo os relacionamentos de Projetos ou Mecânicos.
 func AtualizarServico(c *gin.Context) {
 	var servico models.Servico
 
-	// 1. Busca os dados antigos do banco
+	// 1. Busca os dados antigos do banco pelo ID da URL
 	if err := config.DB.First(&servico, c.Param("id")).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"erro": "Serviço não encontrado"})
 		return
 	}
 
-	// 2. CORREÇÃO: Faz o Bind em uma struct separada (input) para validar erros
+	// 2. Faz o Bind do JSON enviado para uma struct de input
 	var input models.Servico
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"erro": "Erro no JSON: " + err.Error()})
 		return
 	}
 
-	// 3. CORREÇÃO: Atualiza apenas as colunas primitivas com .Updates()
-	// Isso impede que o GORM tente sobrescrever as tabelas de Projetos ou Mecânicos
-	if err := config.DB.Model(&servico).Updates(map[string]interface{}{
+	// 3. Atualiza APENAS as colunas específicas no banco de dados
+	err := config.DB.Model(&servico).Updates(map[string]interface{}{
 		"horas_realizadas": input.HorasRealizadas,
 		"horas_estimadas":  input.HorasEstimadas,
 		"valor":            input.Valor,
 		"categoria":        input.Categoria,
 		"descricao":        input.Descricao,
 		"id_projeto":       input.IDProjeto,
-	}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"erro": "Falha ao salvar: " + err.Error()})
+	}).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erro": "Falha ao salvar no banco: " + err.Error()})
 		return
 	}
 
+	// 4. Retorna o objeto atualizado e o status 200 OK
+	// Nota: Como usamos o Model(&servico), o GORM atualiza o próprio objeto 'servico' na memória com os novos dados do mapa.
 	c.JSON(http.StatusOK, servico)
 }
 

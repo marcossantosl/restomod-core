@@ -1,152 +1,136 @@
--- DDL Ajustado com SERIAL para auto-incremento em todas as chaves primárias
 
-CREATE TABLE Cliente (
-    id_cliente SERIAL PRIMARY KEY,
-    nome VARCHAR(50) NOT NULL,
-    cpf VARCHAR(14),
-    email VARCHAR(100),
-    endereco VARCHAR(100),
-    telefone VARCHAR(15)
-);
-
-CREATE TABLE Oficina (
+-- 1. Tabelas Independentes (Sem Chaves Estrangeiras)
+CREATE TABLE oficina (
     id_oficina SERIAL PRIMARY KEY,
-    nome VARCHAR(50) NOT NULL,
-    cnpj VARCHAR(18),
-    especialidade VARCHAR(100),
+    nome VARCHAR(255) NOT NULL,
+    cnpj VARCHAR(20),
+    especialidade VARCHAR(255),
     endereco VARCHAR(100),
-    telefone VARCHAR(15)
+    telefone VARCHAR(20)
 );
 
-CREATE TABLE Projeto (
+CREATE TABLE cliente (
+    id_cliente SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    cpf VARCHAR(20),
+    email VARCHAR(255),
+    endereco VARCHAR(100),
+    telefone VARCHAR(20)
+);
+
+CREATE TABLE fornecedor (
+    id_fornecedor SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    especialidade VARCHAR(255),
+    contato VARCHAR(255)
+);
+
+CREATE TABLE veiculo (
+    id_veiculo SERIAL PRIMARY KEY,
+    marca VARCHAR(100),
+    modelo VARCHAR(100),
+    placa VARCHAR(20),
+    chassi VARCHAR(100),
+    ano_fabricacao INT,
+    status VARCHAR(50),
+    categoria VARCHAR(100),
+    whp_original INT,
+    kgfm_original INT
+);
+
+CREATE TABLE peca (
+    id_peca SERIAL PRIMARY KEY,
+    nome VARCHAR(255),
+    fabricante VARCHAR(255),
+    origem VARCHAR(100),
+    estoque INT DEFAULT 0,
+    numero_peca INT,
+    preco_referencia DECIMAL(10,2),
+    tipo_peca VARCHAR(100)
+);
+
+-- 2. Tabelas Dependentes (Com Chaves Estrangeiras)
+CREATE TABLE mecanico (
+    id_mecanico SERIAL PRIMARY KEY,
+    nome VARCHAR(255),
+    cpf VARCHAR(20),
+    especialidade VARCHAR(100),
+    nivel VARCHAR(50),
+    id_oficina INT REFERENCES oficina(id_oficina)
+);
+
+CREATE TABLE projeto (
     id_projeto SERIAL PRIMARY KEY,
-    titulo VARCHAR(20)
     data_inicio DATE,
+    titulo VARCHAR(255),
     data_previsao DATE,
     orcamento_total DECIMAL(12,2),
-    categoria_projeto VARCHAR(50),
-    id_oficina INTEGER,
-    id_cliente INTEGER,
-    FOREIGN KEY (id_oficina) REFERENCES Oficina(id_oficina),
-    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
+    categoria_projeto VARCHAR(100),
+    id_oficina INT REFERENCES oficina(id_oficina),
+    id_cliente INT REFERENCES cliente(id_cliente)
 );
 
-CREATE TABLE Upgrade_Restomod (
+CREATE TABLE upgrade_restomod (
     id_upgrade_restomod SERIAL PRIMARY KEY,
-    sistema_alvo VARCHAR(50),
-    veiculo_doador VARCHAR(50),
-    descricao_adaptacao VARCHAR(500),
-    whp_final INTEGER,
-    kgfm_final INTEGER,
-    data_upgrade DATE
+    sistema_alvo VARCHAR(255),
+    veiculo_doador VARCHAR(255),
+    descricao_adaptacao VARCHAR(255),
+    whp_final INT,
+    kgfm_final INT,
+    data_upgrade_inicio DATE,
+    data_upgrade_fim DATE,
+    id_projeto INT REFERENCES projeto(id_projeto) ON DELETE CASCADE
 );
 
-CREATE TABLE Contempla (
-    id_upgrade_restomod INTEGER,
-    id_projeto INTEGER,
-    PRIMARY KEY (id_upgrade_restomod, id_projeto),
-    FOREIGN KEY (id_upgrade_restomod) REFERENCES Upgrade_Restomod(id_upgrade_restomod),
-    FOREIGN KEY (id_projeto) REFERENCES Projeto(id_projeto)
-);
-
-CREATE TABLE Veiculo (
-    id_veiculo SERIAL PRIMARY KEY,
-    marca VARCHAR(20),
-    modelo VARCHAR(20),
-    chassi VARCHAR(50),
-    ano_fabricacao INTEGER,
-    status VARCHAR(20),
-    categoria VARCHAR(20),
-    whp_original INTEGER,
-    kgfm_original INTEGER
+CREATE TABLE servico (
+    id_servico SERIAL PRIMARY KEY,
+    categoria VARCHAR(100),
+    descricao VARCHAR(200),
+    horas_realizadas DECIMAL(5,2),
+    horas_estimadas DECIMAL(5,2),
+    valor DECIMAL(10,2),
+    id_projeto INT REFERENCES projeto(id_projeto),
+    id_upgrade_restomod INT REFERENCES upgrade_restomod(id_upgrade_restomod) ON DELETE SET NULL
 );
 
 CREATE TABLE historico_projeto (
     id_historico SERIAL PRIMARY KEY,
-    status VARCHAR(20),
+    status VARCHAR(100),
     data DATE,
-    km_registrado INTEGER,
-    tipo_servico VARCHAR(50),
-    descricao VARCHAR(500),
-    id_projeto INTEGER,
-    id_veiculo INTEGER,
-    FOREIGN KEY (id_projeto) REFERENCES Projeto(id_projeto),
-    FOREIGN KEY (id_veiculo) REFERENCES Veiculo(id_veiculo)
+    km_registrado INT,
+    tipo_servico VARCHAR(100),
+    descricao VARCHAR(200),
+    id_projeto INT REFERENCES projeto(id_projeto),
+    id_veiculo INT REFERENCES veiculo(id_veiculo)
 );
 
-CREATE TABLE Mecanico (
-    id_mecanico SERIAL PRIMARY KEY,
-    nome VARCHAR(50),
-    cpf VARCHAR(14),
-    especialidade VARCHAR(100),
-    nivel VARCHAR(20),
-    id_oficina INTEGER,
-    FOREIGN KEY (id_oficina) REFERENCES Oficina(id_oficina)
-);
-
-CREATE TABLE Inspecao (
+CREATE TABLE inspecao (
     id_inspecao SERIAL PRIMARY KEY,
     data_inspecao DATE,
-    tipo VARCHAR(20),
-    resultado VARCHAR(500),
-    observacoes VARCHAR(100),
-    id_mecanico INTEGER,
-    id_veiculo INTEGER,
-    FOREIGN KEY (id_mecanico) REFERENCES Mecanico(id_mecanico),
-    FOREIGN KEY (id_veiculo) REFERENCES Veiculo(id_veiculo)
+    tipo VARCHAR(100),
+    resultado VARCHAR(255),
+    observacoes TEXT,
+    id_mecanico INT REFERENCES mecanico(id_mecanico) ON DELETE RESTRICT,
+    id_veiculo INT REFERENCES veiculo(id_veiculo) ON DELETE CASCADE
 );
 
-CREATE TABLE Servico (
-    id_servico SERIAL PRIMARY KEY,
-    horas_realizadas DECIMAL(5,2),
-    horas_estimadas DECIMAL(5,2),
-    valor DECIMAL(10,2),
-    categoria VARCHAR(50),
-    descricao VARCHAR(500),
-    id_projeto INTEGER,
-    FOREIGN KEY (id_projeto) REFERENCES Projeto(id_projeto)
-);
-
-CREATE TABLE Realiza (
-    id_mecanico INTEGER,
-    id_servico INTEGER,
-    PRIMARY KEY (id_mecanico, id_servico),
-    FOREIGN KEY (id_mecanico) REFERENCES Mecanico(id_mecanico),
-    FOREIGN KEY (id_servico) REFERENCES Servico(id_servico)
-);
-
-CREATE TABLE Fornecedor (
-    id_fornecedor SERIAL PRIMARY KEY,
-    contato VARCHAR(50),
-    especialidade VARCHAR(100),
-    nome VARCHAR(50)
-);
-
-CREATE TABLE Peca (
-    id_peca SERIAL PRIMARY KEY,
-    nome VARCHAR(100),
-    fabricante VARCHAR(20),
-    origem VARCHAR(20),
-    estoque INTEGER,
-    numero_peca INTEGER,
-    preco_referencia DECIMAL(10,2),
-    tipo_peca VARCHAR(20)
+-- 3. Tabelas Associativas (Relações N:N)
+CREATE TABLE realiza (
+    id_servico INT REFERENCES servico(id_servico) ON DELETE CASCADE,
+    id_mecanico INT REFERENCES mecanico(id_mecanico) ON DELETE CASCADE,
+    PRIMARY KEY (id_servico, id_mecanico)
 );
 
 CREATE TABLE fornece (
-    id_peca INTEGER,
-    id_fornecedor INTEGER,
-    PRIMARY KEY (id_peca, id_fornecedor),
-    FOREIGN KEY (id_peca) REFERENCES Peca(id_peca),
-    FOREIGN KEY (id_fornecedor) REFERENCES Fornecedor(id_fornecedor)
+    id_peca INT REFERENCES peca(id_peca) ON DELETE CASCADE,
+    id_fornecedor INT REFERENCES fornecedor(id_fornecedor) ON DELETE CASCADE,
+    PRIMARY KEY (id_peca, id_fornecedor)
 );
 
-CREATE TABLE Uso_Peca (
+CREATE TABLE uso_peca (
     id_uso_peca SERIAL PRIMARY KEY,
     valor_venda DECIMAL(10,2),
-    quantidade INTEGER,
-    id_peca INTEGER,
-    id_servico INTEGER,
-    FOREIGN KEY (id_peca) REFERENCES Peca(id_peca),
-    FOREIGN KEY (id_servico) REFERENCES Servico(id_servico)
+    quantidade INT,
+    id_peca INT REFERENCES peca(id_peca) ON DELETE CASCADE,
+    id_servico INT REFERENCES servico(id_servico) ON DELETE RESTRICT
 );

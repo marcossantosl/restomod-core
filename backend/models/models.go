@@ -50,17 +50,21 @@ type Mecanico struct {
 func (Mecanico) TableName() string { return "mecanico" }
 
 type Servico struct {
-	IDServico       uint    `gorm:"primaryKey;autoIncrement;column:id_servico" json:"id_servico"`
-	HorasRealizadas float64 `gorm:"column:horas_realizadas"                    json:"horas_realizadas"`
-	HorasEstimadas  float64 `gorm:"column:horas_estimadas"                     json:"horas_estimadas"`
-	Valor           float64 `gorm:"column:valor"                               json:"valor"`
-	Categoria       string  `gorm:"column:categoria"                           json:"categoria"`
-	Descricao       string  `gorm:"column:descricao"                           json:"descricao"`
-	IDProjeto       uint    `gorm:"column:id_projeto"                          json:"id_projeto"`
-	Projeto         Projeto `gorm:"foreignKey:IDProjeto;references:IDProjeto"  json:"projeto,omitempty"`
+	IDServico       uint    `gorm:"primaryKey;column:id_servico" json:"id_servico"`
+	Categoria       string  `gorm:"column:categoria" json:"categoria"`
+	Descricao       string  `gorm:"column:descricao" json:"descricao"`
+	HorasRealizadas float64 `gorm:"column:horas_realizadas" json:"horas_realizadas"`
+	HorasEstimadas  float64 `gorm:"column:horas_estimadas" json:"horas_estimadas"`
+	Valor           float64 `gorm:"column:valor" json:"valor"`
+	IDProjeto       uint    `gorm:"column:id_projeto" json:"id_projeto"`
 
-	// Adicionamos as constraints de ON DELETE CASCADE para ambas as pontas da tabela associativa
-	Mecanicos []Mecanico `gorm:"many2many:realiza;joinForeignKey:IDServico;joinReferences:IDMecanico;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"mecanicos,omitempty"`
+	// NOVA COLUNA: Usamos ponteiro (*uint) para que o campo aceite NULL no banco
+	// (já que um serviço pode ser uma manutenção simples e não um upgrade)
+	IDUpgradeRestomod *uint `gorm:"column:id_upgrade_restomod" json:"id_upgrade_restomod"`
+
+	Projeto         *Projeto         `gorm:"foreignKey:IDProjeto;references:IDProjeto" json:"projeto,omitempty"`
+	UpgradeRestomod *UpgradeRestomod `gorm:"foreignKey:IDUpgradeRestomod;references:IDUpgradeRestomod" json:"upgrade_restomod,omitempty"`
+	Mecanicos       []Mecanico       `gorm:"many2many:realiza;joinForeignKey:IDServico;joinReferences:IDMecanico" json:"mecanicos,omitempty"`
 }
 
 func (Servico) TableName() string { return "servico" }
@@ -125,9 +129,10 @@ type UsoPeca struct {
 	ValorVenda float64 `gorm:"column:valor_venda"                            json:"valor_venda"`
 	Quantidade int     `gorm:"column:quantidade"                             json:"quantidade"`
 	IDPeca     uint    `gorm:"column:id_peca"                                json:"id_peca"`
-	Peca       Peca    `gorm:"foreignKey:IDPeca;references:IDPeca"           json:"peca,omitempty"`
 	IDServico  uint    `gorm:"column:id_servico"                             json:"id_servico"`
-	Servico    Servico `gorm:"foreignKey:IDServico;references:IDServico"     json:"servico,omitempty"`
+	Peca       Peca    `gorm:"foreignKey:IDPeca;references:IDPeca;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"peca,omitempty"`
+	// 2. Relação com o Serviço: NÃO TEM CASCADE (RESTRICT protege o estoque)
+	Servico Servico `gorm:"foreignKey:IDServico;references:IDServico;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"servico,omitempty"`
 }
 
 func (UsoPeca) TableName() string { return "uso_peca" }
@@ -148,9 +153,12 @@ type UpgradeRestomod struct {
 	DescricaoAdaptacao string  `gorm:"column:descricao_adaptacao"                                  json:"descricao_adaptacao"`
 	WHPFinal           string  `gorm:"column:whp_final"                                            json:"whp_final"`
 	KGFMFinal          string  `gorm:"column:kgfm_final"                                           json:"kgfm_final"`
-	DataUpgrade        string  `gorm:"column:data_upgrade"                                         json:"data_upgrade"`
+	DataUpgradeInicio  string  `gorm:"column:data_upgrade_inicio"                                  json:"data_upgrade_inicio"`
+	DataUpgradeFim     string  `gorm:"column:data_upgrade_fim"                                     json:"data_upgrade_fim"`
 	IDProjeto          uint    `gorm:"column:id_projeto"                          json:"id_projeto"`
 	Projeto            Projeto `gorm:"foreignKey:IDProjeto;references:IDProjeto"  json:"projeto,omitempty"`
+	// Opcional: Permite fazer Preload("Servicos.Peca") a partir do Upgrade
+	Servicos []Servico `gorm:"foreignKey:IDUpgradeRestomod;references:IDUpgradeRestomod" json:"servicos,omitempty"`
 }
 
 func (UpgradeRestomod) TableName() string { return "upgrade_restomod" }
