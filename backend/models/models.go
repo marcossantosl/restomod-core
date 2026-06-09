@@ -151,8 +151,8 @@ type UpgradeRestomod struct {
 	SistemaAlvo        string  `gorm:"column:sistema_alvo"                                         json:"sistema_alvo"`
 	VeiculoDoador      string  `gorm:"column:veiculo_doador"                                       json:"veiculo_doador"`
 	DescricaoAdaptacao string  `gorm:"column:descricao_adaptacao"                                  json:"descricao_adaptacao"`
-	WHPFinal           string  `gorm:"column:whp_final"                                            json:"whp_final"`
-	KGFMFinal          string  `gorm:"column:kgfm_final"                                           json:"kgfm_final"`
+	WHPFinal           int     `gorm:"column:whp_final"                                            json:"whp_final"`
+	KGFMFinal          int     `gorm:"column:kgfm_final"                                           json:"kgfm_final"`
 	DataUpgradeInicio  string  `gorm:"column:data_upgrade_inicio"                                  json:"data_upgrade_inicio"`
 	DataUpgradeFim     string  `gorm:"column:data_upgrade_fim"                                     json:"data_upgrade_fim"`
 	IDProjeto          uint    `gorm:"column:id_projeto"                          json:"id_projeto"`

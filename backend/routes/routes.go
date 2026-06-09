@@ -150,4 +150,13 @@ func SetupRoutes(r *gin.Engine) {
 		upgradeRestomod.DELETE("/:id", handlers.DeletarUpgradeRestomod)
 	}
 
+	dashboard := api.Group("/dashboard")
+	{
+		dashboard.GET("/servicos-por-oficina", handlers.ConsultaServicosPorOficina)
+		dashboard.GET("/horas-por-mecanico", handlers.ConsultaHorasPorMecanico)
+		dashboard.GET("/pecas-utilizadas", handlers.ConsultaPecasUtilizadas)
+	}
+
+	api.POST("/seed", handlers.SeedBancoDados)
+	api.DELETE("/drop", handlers.DropBancoDados)
 }

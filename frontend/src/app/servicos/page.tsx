@@ -24,7 +24,7 @@ export default function ServicosPage() {
       // Tratamento anti-crash: Cria uma string segura para exibir na tabela
       const servicosTratados = response.data.map((servico: any) => ({
         ...servico,
-        upgrade_nome: servico.upgrade_restomod?.sistema_alvo || 'Nenhum (Manutenção Padrão)'
+        upgrade_nome: servico.upgrade_restomod?.descricao_adaptacao || 'Nenhum (Manutenção Padrão)'
       }))
       
       setData(servicosTratados)

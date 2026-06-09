@@ -50,41 +50,41 @@ func CriarServico(c *gin.Context) {
 	c.JSON(http.StatusCreated, servico)
 }
 
-// AtualizarServico atualiza apenas os campos primitivos de um serviço,
-// protegendo os relacionamentos de Projetos ou Mecânicos.
+// / PUT /api/servicos/:id
 func AtualizarServico(c *gin.Context) {
-	var servico models.Servico
+	id := c.Param("id")
 
-	// 1. Busca os dados antigos do banco pelo ID da URL
-	if err := config.DB.First(&servico, c.Param("id")).Error; err != nil {
+	// 1. Busca o registro atual no banco
+	var servico models.Servico
+	if err := config.DB.First(&servico, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"erro": "Serviço não encontrado"})
 		return
 	}
 
-	// 2. Faz o Bind do JSON enviado para uma struct de input
+	// 2. Recebe o JSON com os dados editados do frontend
 	var input models.Servico
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"erro": "Erro no JSON: " + err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"erro": "JSON inválido: " + err.Error()})
 		return
 	}
 
-	// 3. Atualiza APENAS as colunas específicas no banco de dados
-	err := config.DB.Model(&servico).Updates(map[string]interface{}{
-		"horas_realizadas": input.HorasRealizadas,
-		"horas_estimadas":  input.HorasEstimadas,
-		"valor":            input.Valor,
-		"categoria":        input.Categoria,
-		"descricao":        input.Descricao,
-		"id_projeto":       input.IDProjeto,
-	}).Error
+	// 3. COPIA BLINDADA DE CAMPOS (O segredo está aqui)
+	servico.Categoria = input.Categoria
+	servico.Descricao = input.Descricao
+	servico.HorasEstimadas = input.HorasEstimadas
+	servico.HorasRealizadas = input.HorasRealizadas
+	servico.Valor = input.Valor
+	servico.IDProjeto = input.IDProjeto
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"erro": "Falha ao salvar no banco: " + err.Error()})
+	// A MÁGICA: Atualiza o ponteiro do Upgrade (transfere o ID ou o NULL perfeitamente)
+	servico.IDUpgradeRestomod = input.IDUpgradeRestomod
+
+	// 4. Salva no banco ignorando as tabelas aninhadas para não dar bug
+	if err := config.DB.Omit("Projeto", "UpgradeRestomod", "Mecanicos").Save(&servico).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"erro": "Falha ao salvar a edição"})
 		return
 	}
 
-	// 4. Retorna o objeto atualizado e o status 200 OK
-	// Nota: Como usamos o Model(&servico), o GORM atualiza o próprio objeto 'servico' na memória com os novos dados do mapa.
 	c.JSON(http.StatusOK, servico)
 }
 
