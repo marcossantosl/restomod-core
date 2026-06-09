@@ -1,5 +1,3 @@
-
--- 1. Tabelas Independentes (Sem Chaves Estrangeiras)
 CREATE TABLE oficina (
     id_oficina SERIAL PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
@@ -25,19 +23,6 @@ CREATE TABLE fornecedor (
     contato VARCHAR(255)
 );
 
-CREATE TABLE veiculo (
-    id_veiculo SERIAL PRIMARY KEY,
-    marca VARCHAR(100),
-    modelo VARCHAR(100),
-    placa VARCHAR(20),
-    chassi VARCHAR(100),
-    ano_fabricacao INT,
-    status VARCHAR(50),
-    categoria VARCHAR(100),
-    whp_original INT,
-    kgfm_original INT
-);
-
 CREATE TABLE peca (
     id_peca SERIAL PRIMARY KEY,
     nome VARCHAR(255),
@@ -49,7 +34,22 @@ CREATE TABLE peca (
     tipo_peca VARCHAR(100)
 );
 
--- 2. Tabelas Dependentes (Com Chaves Estrangeiras)
+-- 2. Tabelas Dependentes Nível 1
+CREATE TABLE veiculo (
+    id_veiculo SERIAL PRIMARY KEY,
+    marca VARCHAR(100),
+    modelo VARCHAR(100),
+    placa VARCHAR(20),
+    chassi VARCHAR(100),
+    ano_fabricacao INT,
+    status VARCHAR(50),
+    categoria VARCHAR(100),
+    whp_original INT,
+    kgfm_original INT,
+    -- NOVO: Veículo atrelado ao Cliente
+    id_cliente INT REFERENCES cliente(id_cliente) ON DELETE CASCADE
+);
+
 CREATE TABLE mecanico (
     id_mecanico SERIAL PRIMARY KEY,
     nome VARCHAR(255),
@@ -59,6 +59,7 @@ CREATE TABLE mecanico (
     id_oficina INT REFERENCES oficina(id_oficina)
 );
 
+-- 3. Tabelas Dependentes Nível 2
 CREATE TABLE projeto (
     id_projeto SERIAL PRIMARY KEY,
     data_inicio DATE,
@@ -67,9 +68,12 @@ CREATE TABLE projeto (
     orcamento_total DECIMAL(12,2),
     categoria_projeto VARCHAR(100),
     id_oficina INT REFERENCES oficina(id_oficina),
-    id_cliente INT REFERENCES cliente(id_cliente)
+    id_cliente INT REFERENCES cliente(id_cliente),
+    -- NOVO: Projeto atrelado ao Veículo
+    id_veiculo INT REFERENCES veiculo(id_veiculo) ON DELETE CASCADE
 );
 
+-- 4. Tabelas Dependentes Nível 3
 CREATE TABLE upgrade_restomod (
     id_upgrade_restomod SERIAL PRIMARY KEY,
     sistema_alvo VARCHAR(255),
@@ -89,7 +93,8 @@ CREATE TABLE servico (
     horas_realizadas DECIMAL(5,2),
     horas_estimadas DECIMAL(5,2),
     valor DECIMAL(10,2),
-    id_projeto INT REFERENCES projeto(id_projeto),
+    -- AJUSTE: Se deletar o projeto, deleta os serviços
+    id_projeto INT REFERENCES projeto(id_projeto) ON DELETE CASCADE,
     id_upgrade_restomod INT REFERENCES upgrade_restomod(id_upgrade_restomod) ON DELETE SET NULL
 );
 
@@ -100,8 +105,8 @@ CREATE TABLE historico_projeto (
     km_registrado INT,
     tipo_servico VARCHAR(100),
     descricao VARCHAR(200),
-    id_projeto INT REFERENCES projeto(id_projeto),
-    id_veiculo INT REFERENCES veiculo(id_veiculo)
+    -- AJUSTE: Removido id_veiculo (redundância) e adicionado CASCADE ao projeto
+    id_projeto INT REFERENCES projeto(id_projeto) ON DELETE CASCADE
 );
 
 CREATE TABLE inspecao (
@@ -109,12 +114,12 @@ CREATE TABLE inspecao (
     data_inspecao DATE,
     tipo VARCHAR(100),
     resultado VARCHAR(255),
-    observacoes TEXT,
+    observacoes VARCHAR(200),
     id_mecanico INT REFERENCES mecanico(id_mecanico) ON DELETE RESTRICT,
     id_veiculo INT REFERENCES veiculo(id_veiculo) ON DELETE CASCADE
 );
 
--- 3. Tabelas Associativas (Relações N:N)
+-- 5. Tabelas Associativas (Relações N:N)
 CREATE TABLE realiza (
     id_servico INT REFERENCES servico(id_servico) ON DELETE CASCADE,
     id_mecanico INT REFERENCES mecanico(id_mecanico) ON DELETE CASCADE,
@@ -131,6 +136,7 @@ CREATE TABLE uso_peca (
     id_uso_peca SERIAL PRIMARY KEY,
     valor_venda DECIMAL(10,2),
     quantidade INT,
-    id_peca INT REFERENCES peca(id_peca) ON DELETE CASCADE,
+    -- AJUSTE CRÍTICO: RESTRICT blinda o histórico financeiro da peça
+    id_peca INT REFERENCES peca(id_peca) ON DELETE RESTRICT,
     id_servico INT REFERENCES servico(id_servico) ON DELETE RESTRICT
 );
