@@ -1,0 +1,285 @@
+{
+  "name": "Restomod - Assistente IA Gemini",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "assistente",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "node-webhook-001",
+      "name": "1. Receber Pergunta",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "restomod-assistente-v1"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://backend:8080/api/assistente/contexto",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "node-http-banco-002",
+      "name": "2. Buscar Dados do Banco",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        280,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"resposta\": \"Não foi possível conectar ao banco de dados. Verifique se o PostgreSQL e o backend estão rodando (docker-compose up).\" } }}",
+        "options": {
+          "responseCode": 503,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "node-respond-db-error-002b",
+      "name": "2b. Erro: Banco Indisponível",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        280,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─────────────────────────────────────────────────────────────────────────────\n// NÓ 3 — Validar mensagem + filtrar contexto do banco por relevância\n//\n// MELHORIA 1: separação clara do caminho de erro do banco (tratado no nó 2b)\n// MELHORIA 2: filtragem inteligente — só envia ao Gemini o que é relevante\n//             para a pergunta, mantendo o payload < ~80KB e economizando tokens\n// ─────────────────────────────────────────────────────────────────────────────\n\nconst webhook = $('1. Receber Pergunta').first().json;\nconst body = webhook.body ?? webhook;\nconst mensagem = (body.mensagem || body.message || '').trim();\n\nif (!mensagem) {\n  return [{ json: { resposta: 'Envie uma mensagem no campo \"mensagem\".' } }];\n}\n\nconst db = $input.first().json;\n\n// ── Helpers ──────────────────────────────────────────────────────────────────\n\n// Normaliza texto para busca sem acento e minúsculo\nfunction norm(str) {\n  return String(str || '')\n    .toLowerCase()\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '');\n}\n\n// Verifica se um objeto contém algum dos termos da pergunta\nfunction match(obj, termos) {\n  const texto = norm(JSON.stringify(obj));\n  return termos.some(t => texto.includes(t));\n}\n\n// Extrai até N itens mais relevantes de um array pelo score de matches\nfunction filtrar(arr, termos, limite) {\n  if (!Array.isArray(arr) || arr.length === 0) return [];\n  if (arr.length <= limite) return arr;\n\n  const scored = arr.map(item => ({\n    item,\n    score: termos.filter(t => norm(JSON.stringify(item)).includes(t)).length,\n  }));\n\n  scored.sort((a, b) => b.score - a.score);\n\n  // Sempre inclui os que tiveram pelo menos 1 match; complementa até o limite\n  const comMatch = scored.filter(s => s.score > 0).map(s => s.item);\n  const semMatch = scored.filter(s => s.score === 0).map(s => s.item);\n\n  return [...comMatch, ...semMatch].slice(0, limite);\n}\n\n// ── Tokenização simples da pergunta ──────────────────────────────────────────\n// Remove stopwords em pt-BR e mantém tokens com 3+ chars\nconst STOPWORDS = new Set([\n  'de','do','da','dos','das','em','no','na','nos','nas','para','com',\n  'por','que','como','qual','quais','quem','quando','onde','o','a',\n  'os','as','um','uma','uns','umas','e','ou','se','mas','mais',\n  'este','esta','esse','essa','isso','aquele','aquela','ele','ela',\n  'meu','minha','seu','sua','nosso','nossa','foi','ser','ter','tem',\n  'me','te','nos','lhe','lhes','ja','nao','sim','ainda','tambem',\n]);\n\nconst termos = norm(mensagem)\n  .split(/[\\s,.:;!?()\\[\\]{}\"']+/)\n  .filter(t => t.length >= 3 && !STOPWORDS.has(t));\n\n// ── Detectar intenção por categoria ─────────────────────────────────────────\nconst msg = norm(mensagem);\n\nconst quer = {\n  cliente:    /client|cpf|email|comprador/.test(msg),\n  veiculo:    /veiculo|carro|moto|placa|chassi|marca|modelo|ano/.test(msg),\n  projeto:    /projeto|orcamento|previsao|categoria/.test(msg),\n  mecanico:   /mecanic|especialidade|nivel|tecnic/.test(msg),\n  servico:    /servico|hora|realiz|valor|categor/.test(msg),\n  peca:       /peca|estoque|fabricante|origem|numero|tipo/.test(msg),\n  fornecedor: /fornecedor|contato|fornec/.test(msg),\n  uso:        /uso|vendid|quantidade|movimentad/.test(msg),\n  historico:  /historic|status|km|quilometr|andamento/.test(msg),\n  upgrade:    /upgrade|restomod|whp|kgfm|doador|adaptacao/.test(msg),\n  inspecao:   /inspecao|inspecionar|result|observ|vistoria/.test(msg),\n  analise:    /analise|analytic|relatorio|ranking|top|total|maior|menor|mais|menos/.test(msg),\n};\n\n// Se nenhuma categoria detectada, inclui tudo (pergunta genérica)\nconst algumDetectado = Object.values(quer).some(Boolean);\nif (!algumDetectado) Object.keys(quer).forEach(k => quer[k] = true);\n\n// ── Montar contexto filtrado ──────────────────────────────────────────────────\n// Limites por entidade: reduz em ~70-90% o payload quando o banco está populado\nconst LIMITE = {\n  padrao:  15,   // entidades principais quando relevantes\n  pequeno:  8,   // entidades de suporte\n  grande:  25,   // servicos/pecas (mais granulares)\n};\n\nconst ctx = {};\n\nif (quer.cliente)    ctx.clientes    = filtrar(db.clientes,    termos, LIMITE.padrao);\nif (quer.veiculo)    ctx.veiculos    = filtrar(db.veiculos,    termos, LIMITE.padrao);\nif (quer.projeto)    ctx.projetos    = filtrar(db.projetos,    termos, LIMITE.padrao);\nif (quer.mecanico)   ctx.mecanicos   = filtrar(db.mecanicos,   termos, LIMITE.padrao);\nif (quer.servico)    ctx.servicos    = filtrar(db.servicos,    termos, LIMITE.grande);\nif (quer.peca)       ctx.pecas       = filtrar(db.pecas,       termos, LIMITE.grande);\nif (quer.fornecedor) ctx.fornecedores = filtrar(db.fornecedores, termos, LIMITE.pequeno);\nif (quer.uso)        ctx.uso_pecas   = filtrar(db.uso_pecas,   termos, LIMITE.grande);\nif (quer.historico)  ctx.historicos_projeto = filtrar(db.historicos_projeto, termos, LIMITE.padrao);\nif (quer.upgrade)    ctx.upgrades_restomod  = filtrar(db.upgrades_restomod,  termos, LIMITE.padrao);\nif (quer.inspecao)   ctx.inspecoes   = filtrar(db.inspecoes,   termos, LIMITE.padrao);\nif (quer.analise)    ctx.analises    = db.analises; // sempre completo (já é pequeno)\n\n// Sempre inclui oficinas (referência em projetos/mecânicos)\nctx.oficinas = db.oficinas || [];\n\n// ── Metadados de cobertura (debug e transparência) ───────────────────────────\nconst cobertura = {};\nfor (const [k, v] of Object.entries(ctx)) {\n  const total = db[k]?.length ?? (k === 'analises' ? 1 : 0);\n  if (Array.isArray(v)) cobertura[k] = `${v.length}/${total}`;\n}\n\n// ── Montar prompt final ───────────────────────────────────────────────────────\nconst contextoStr = JSON.stringify(ctx, null, 2);\n\nconst prompt = `Você é o assistente de análise do sistema Restomod-Core, plataforma de gestão de oficinas automotivas com foco em Restomod.\n\nREGRAS:\n- Use APENAS os dados JSON abaixo, lidos diretamente do banco PostgreSQL.\n- Entidades disponíveis: clientes, oficinas, veículos, projetos, mecânicos, serviços, peças, fornecedores, uso de peças, histórico de projetos, upgrades restomod, inspeções e análises agregadas.\n- Os dados foram pré-filtrados por relevância para a pergunta. Se a informação não estiver presente, informe que pode estar fora do recorte e sugira reformular a pergunta com mais detalhes.\n- Se listas estiverem vazias, o banco pode não estar populado (botão \"Carregar Banco\" no dashboard).\n- Cruze dados quando necessário (ex.: veículo → cliente → projetos → serviços).\n- Responda em português, claro e objetivo.\n- Valores monetários em R$ com formato brasileiro (vírgula decimal, ponto milhar).\n- Se for uma análise ou ranking, formate em lista ou tabela Markdown.\n\nDADOS DO BANCO (filtro aplicado: ${JSON.stringify(cobertura)}):\n${contextoStr}\n\nPERGUNTA:\n${mensagem}`;\n\nreturn [{ json: { prompt, mensagem } }];"
+      },
+      "id": "node-code-prompt-003",
+      "name": "3. Validar + Filtrar Contexto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-prompt",
+              "leftValue": "={{ $json.prompt }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-if-004",
+      "name": "4. Tem Prompt?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        820,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\" + $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"contents\": [{ \"parts\": [{ \"text\": $json.prompt }] }], \"generationConfig\": { \"temperature\": 0.3, \"maxOutputTokens\": 2048 } } }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "node-http-gemini-005",
+      "name": "5. Chamar API Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const gemini = $input.first().json;\n\nif (gemini.error) {\n  const msg = gemini.error.message || JSON.stringify(gemini.error);\n  return [{ json: { resposta: `Erro na API Gemini: ${msg}` } }];\n}\n\nconst texto = gemini.candidates?.[0]?.content?.parts?.[0]?.text;\nif (!texto) {\n  return [{ json: { resposta: 'Gemini não retornou texto. Verifique a GEMINI_API_KEY e o modelo.' } }];\n}\n\nreturn [{ json: { resposta: texto.trim() } }];"
+      },
+      "id": "node-code-extract-006",
+      "name": "6. Extrair Resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "node-respond-007",
+      "name": "7. Responder ao Frontend",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1660,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "1. Receber Pergunta": {
+      "main": [
+        [
+          {
+            "node": "2. Buscar Dados do Banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Buscar Dados do Banco": {
+      "main": [
+        [
+          {
+            "node": "3. Validar + Filtrar Contexto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "2b. Erro: Banco Indisponível",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Validar + Filtrar Contexto": {
+      "main": [
+        [
+          {
+            "node": "4. Tem Prompt?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Tem Prompt?": {
+      "main": [
+        [
+          {
+            "node": "5. Chamar API Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "7. Responder ao Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Chamar API Gemini": {
+      "main": [
+        [
+          {
+            "node": "6. Extrair Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "6. Extrair Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Extrair Resposta": {
+      "main": [
+        [
+          {
+            "node": "7. Responder ao Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

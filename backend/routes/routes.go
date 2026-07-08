@@ -157,6 +157,8 @@ func SetupRoutes(r *gin.Engine) {
 		dashboard.GET("/pecas-utilizadas", handlers.ConsultaPecasUtilizadas)
 	}
 
+	api.GET("/assistente/contexto", handlers.ContextoAssistente)
+
 	api.POST("/seed", handlers.SeedBancoDados)
 	api.DELETE("/drop", handlers.DropBancoDados)
 }

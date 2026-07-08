@@ -1,21 +1,5 @@
 services:
 
-  # ─── Banco de Dados ───────────────────────────────────────────
-  # db:
-  #   image: postgres:16-alpine
-  #   container_name: oficina_db
-  #   restart: always
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: 1234
-  #     POSTGRES_DB: oficina_db
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   networks:
-  #     - oficina_net
-
   # ─── Backend (Go + Gin) ───────────────────────────────────────
   backend:
     build:
@@ -25,7 +9,7 @@ services:
     restart: always
     environment:
       DB_HOST: host.docker.internal
-      DB_PORT: 5432
+      DB_PORT: 5433
       DB_USER: postgres
       DB_PASSWORD: 1234
       DB_NAME: oficina_db
@@ -44,15 +28,16 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+        NEXT_PUBLIC_N8N_WEBHOOK_URL: http://localhost:5678/webhook/assistente
     container_name: oficina_frontend
     restart: always
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080
-      N8N_WEBHOOK_URL: http://n8n:5678
     ports:
       - "3000:3000"
     depends_on:
       - backend
+      - n8n
     networks:
       - oficina_net
 
@@ -62,25 +47,54 @@ services:
     container_name: oficina_n8n
     restart: always
     environment:
-      N8N_BASIC_AUTH_ACTIVE: "true"
-      N8N_BASIC_AUTH_USER: admin
-      N8N_BASIC_AUTH_PASSWORD: admin123
-      N8N_HOST: localhost
+      N8N_HOST: 0.0.0.0
       N8N_PORT: 5678
       N8N_PROTOCOL: http
       WEBHOOK_URL: http://localhost:5678
-      GEMINI_API_KEY: SUA_CHAVE_AQUI
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      N8N_SECURE_COOKIE: "false"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      N8N_MCP_ENABLED: "false"
     ports:
       - "5678:5678"
     volumes:
       - n8n_data:/home/node/.n8n
+      - ./n8n/workflows/assistente-gemini.json:/init/assistente-gemini.json:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        MARKER="/home/node/.n8n/.workflow-imported"
+        echo ">>> n8n: aguardando backend..."
+        for attempt in $(seq 1 30); do
+          if node -e "require('http').get('http://backend:8080/api/assistente/contexto',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"; then
+            echo ">>> n8n: backend disponivel"
+            break
+          fi
+          echo ">>> n8n: tentativa $$attempt/30, aguardando 3s..."
+          sleep 3
+        done
+        if [ ! -f "$$MARKER" ]; then
+          echo ">>> n8n: importando workflow..."
+          if n8n import:workflow --input=/init/assistente-gemini.json; then
+            touch "$$MARKER"
+            echo ">>> n8n: workflow importado"
+          else
+            echo ">>> n8n: importacao do workflow falhou, mas o servidor continuara"
+          fi
+        else
+          echo ">>> n8n: workflow ja importado, pulando importacao"
+        fi
+        echo ">>> n8n: iniciando servidor..."
+        exec n8n start
+    depends_on:
+      - backend
     networks:
       - oficina_net
 
 # ─── Volumes persistentes ────────────────────────────────────────
 volumes:
-  pgdata:
-  n8n_data:
+  n8n_data: # O volume do pgdata foi removido daqui
 
 # ─── Rede interna ────────────────────────────────────────────────
 networks:

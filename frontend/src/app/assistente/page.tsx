@@ -11,7 +11,7 @@ export default function AssistentePage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      text: 'Olá! Sou o assistente de diagnóstico da oficina. Descreva o problema do veículo ou me faça uma pergunta sobre serviços, peças ou projetos.',
+      text: 'Olá! Sou o assistente IA do Restomod. Faça perguntas sobre clientes, veículos, projetos, serviços, peças, mecânicos, upgrades e inspeções — uso os dados do banco para responder.',
     },
   ])
   const [input, setInput]     = useState('')
@@ -30,18 +30,34 @@ export default function AssistentePage() {
     setLoading(true)
 
     try {
-      const res = await fetch(
-        process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/assistente',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mensagem: userMsg }),
-        }
-      )
-      const data = await res.json()
-      setMessages(m => [...m, { role: 'assistant', text: data.resposta || data.output || 'Sem resposta.' }])
-    } catch {
-      setMessages(m => [...m, { role: 'assistant', text: 'Erro ao conectar com o assistente. Verifique se o n8n está rodando.' }])
+      const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/assistente'
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mensagem: userMsg }),
+      })
+
+      let data: { resposta?: string; output?: string; message?: string }
+      try {
+        data = await res.json()
+      } catch {
+        throw new Error(`Resposta inválida do n8n (HTTP ${res.status}). Verifique se o workflow está ativo.`)
+      }
+
+      if (!res.ok) {
+        throw new Error(data.message || data.resposta || `Erro HTTP ${res.status} do n8n`)
+      }
+
+      setMessages(m => [...m, {
+        role: 'assistant',
+        text: data.resposta || data.output || 'Sem resposta do assistente.',
+      }])
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+      setMessages(m => [...m, {
+        role: 'assistant',
+        text: `Erro: ${msg}. Verifique se o n8n está rodando em localhost:5678 e o workflow está ativo.`,
+      }])
     } finally {
       setLoading(false)
     }
