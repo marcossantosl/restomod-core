@@ -1,9 +1,15 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 
 // Server Component: sem 'use client'. Busca os dados direto no servidor,
 // a cada requisição (sem cache), e renderiza o HTML já pronto — nenhum
 // JavaScript de fetch roda no navegador para montar esta página.
 export const dynamic = 'force-dynamic'
+
+export const metadata: Metadata = {
+  title: 'Relatórios',
+  description: 'Relatórios da oficina: valor de serviços por oficina, horas por mecânico e peças mais utilizadas.',
+}
 
 const BACKEND_URL =
   process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'

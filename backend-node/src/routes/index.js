@@ -18,6 +18,7 @@ const upgradeRestomodRoutes = require('./upgradeRestomod.routes');
 const dashboardRoutes = require('./dashboard.routes');
 const assistenteController = require('../controllers/assistente.controller');
 const seedController = require('../controllers/seed.controller');
+const authMiddleware = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
@@ -39,7 +40,8 @@ router.use('/upgraderestomod', upgradeRestomodRoutes);
 router.use('/dashboard', dashboardRoutes);
 
 router.get('/assistente/contexto', assistenteController.contexto);
-router.post('/seed', seedController.seed);
-router.delete('/drop', seedController.drop);
+// Popular e apagar o banco são operações destrutivas: exigem JWT.
+router.post('/seed', authMiddleware, seedController.seed);
+router.delete('/drop', authMiddleware, seedController.drop);
 
 module.exports = router;

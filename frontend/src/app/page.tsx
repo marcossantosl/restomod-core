@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import api from '@/lib/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts'
 import { Database, Trash2, FileText, LayoutDashboard } from 'lucide-react'
@@ -138,7 +139,7 @@ export default function Dashboard() {
             <h2 style={h2Style}>3. Modelagem Conceitual</h2>
             <p style={descStyle}>Representação das entidades (mais de 10) e seus relacionamentos de negócio.</p>
             <div style={{ marginTop: 20, border: '1px solid var(--border)', borderRadius: 8, padding: 8, background: '#fff' }}>
-              <img src="/conceitualfinal.jpg" alt="Modelo Conceitual do Sistema" style={{ width: '100%', height: 'auto', borderRadius: 4 }} />
+              <Image src="/conceitualfinal.jpg" alt="Modelo Conceitual do Sistema" width={1595} height={1071} sizes="(max-width: 1200px) 100vw, 1100px" style={{ width: '100%', height: 'auto', borderRadius: 4 }} />
             </div>
           </div>
 
@@ -146,7 +147,7 @@ export default function Dashboard() {
             <h2 style={h2Style}>4. Modelagem Lógica</h2>
             <p style={descStyle}>Representação das tabelas, tipos de dados e chaves estrangeiras geradas a partir do modelo conceitual.</p>
             <div style={{ marginTop: 20, border: '1px solid var(--border)', borderRadius: 8, padding: 8, background: '#fff' }}>
-              <img src="/logicofinal.jpg" alt="Modelo Lógico do Sistema" style={{ width: '100%', height: 'auto', borderRadius: 4 }} />
+              <Image src="/logicofinal.jpg" alt="Modelo Lógico do Sistema" width={1480} height={1082} sizes="(max-width: 1200px) 100vw, 1100px" style={{ width: '100%', height: 'auto', borderRadius: 4 }} />
             </div>
           </div>
 

@@ -1,9 +1,21 @@
+import { getTokenExp } from './jwt'
+
 const TOKEN_KEY = 'restomod_token'
 const EMAIL_KEY = 'restomod_email'
+
+// Nome do cookie lido pelo middleware (src/middleware.ts). O localStorage só
+// existe no navegador; o cookie é enviado em toda requisição, então o servidor
+// do Next consegue saber se há sessão antes de renderizar a página.
+export const AUTH_COOKIE = 'restomod_token'
 
 export function setSession(token: string, email: string) {
   localStorage.setItem(TOKEN_KEY, token)
   localStorage.setItem(EMAIL_KEY, email)
+
+  // O cookie expira junto com o JWT (ou em 1 dia, se não der para ler o exp).
+  const exp = getTokenExp(token)
+  const maxAge = exp ? Math.max(0, exp - Math.floor(Date.now() / 1000)) : 60 * 60 * 24
+  document.cookie = `${AUTH_COOKIE}=${token}; path=/; max-age=${maxAge}; SameSite=Lax`
 }
 
 export function getToken(): string | null {
@@ -19,6 +31,7 @@ export function getUserEmail(): string | null {
 export function clearSession() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(EMAIL_KEY)
+  document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0; SameSite=Lax`
 }
 
 export function isLoggedIn(): boolean {
@@ -41,6 +54,7 @@ export function requireAuth(router: Router): boolean {
 export function handleAuthError(error: any, router: Router): boolean {
   if (error?.response?.status === 401) {
     alert('Sua sessão expirou. Entre novamente.')
+    clearSession()
     router.push('/login')
     return true
   }

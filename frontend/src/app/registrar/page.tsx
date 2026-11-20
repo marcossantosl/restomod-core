@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import { setSession } from '@/lib/auth'
@@ -21,7 +22,10 @@ export default function RegistrarPage() {
       await api.post('/api/auth/registrar', { nome, email, senha })
       const res = await api.post('/api/auth/login', { email, senha })
       setSession(res.data.token, email)
-      router.push('/projetos')
+      // Volta para a página que o middleware bloqueou (?next=...), se houver.
+      const next = new URLSearchParams(window.location.search).get('next')
+      router.push(next && next.startsWith('/') && !next.startsWith('//') ? next : '/projetos')
+      router.refresh()
     } catch (err: any) {
       setErro(err?.response?.data?.erro || 'Erro ao cadastrar.')
     } finally {
@@ -78,7 +82,7 @@ export default function RegistrarPage() {
         </button>
 
         <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
-          Já tem conta? <a href="/login" style={{ color: 'var(--accent)' }}>Entrar</a>
+          Já tem conta? <Link href="/login" style={{ color: 'var(--accent)' }}>Entrar</Link>
         </p>
       </form>
     </div>
