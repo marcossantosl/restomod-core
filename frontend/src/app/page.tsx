@@ -5,6 +5,15 @@ import api from '@/lib/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts'
 import { Database, Trash2, FileText, LayoutDashboard } from 'lucide-react'
 
+// Traduz o erro do axios numa mensagem útil: status HTTP + mensagem da API,
+// ou "sem resposta" quando a requisição nem chegou (API fora do ar ou CORS).
+function descreverErro(err: any): string {
+  const status = err?.response?.status
+  if (!status) return 'sem resposta da API (fora do ar, acordando ou bloqueada por CORS)'
+  if (status === 401) return 'sessão inválida ou expirada (401). Saia e entre novamente.'
+  return `HTTP ${status} — ${err.response.data?.erro || 'erro desconhecido'}`
+}
+
 const CORES = ['#ff6b0a','#ff8c35','#ffb570','#e85500','#c04000','#963200','#ff6b0a','#ff8c35','#ffb570','#e85500']
 
 export default function Dashboard() {
@@ -32,7 +41,7 @@ export default function Dashboard() {
       await api.post('/api/seed')
       setMsg('✅ Banco populado com sucesso!')
       loadConsultas()
-    } catch { setMsg('Erro ao popular banco') }
+    } catch (err) { setMsg(`Erro ao popular banco: ${descreverErro(err)}`) }
     setLoading(false)
   }
 
@@ -43,7 +52,7 @@ export default function Dashboard() {
       await api.delete('/api/drop')
       setMsg('Todas as tabelas foram limpas!')
       loadConsultas()
-    } catch { setMsg('Erro ao limpar banco') }
+    } catch (err) { setMsg(`Erro ao limpar banco: ${descreverErro(err)}`) }
     setLoading(false)
   }
 

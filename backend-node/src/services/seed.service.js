@@ -1,4 +1,5 @@
 const prisma = require('../database/prisma');
+const { DATA_REGEX, paraDate } = require('../utils/datas');
 
 const TABELAS_EM_ORDEM = [
   'uso_peca',
@@ -26,9 +27,20 @@ async function limpar() {
 // Insere em sequência (em vez de createMany) para preservar a ordem de geração
 // dos IDs seriais e evitar um bug conhecido do engine do Prisma 5.x ao combinar
 // createMany com colunas Decimal/Date anuláveis na mesma tabela.
+// Os dados de exemplo trazem as datas como "AAAA-MM-DD" (mais legível);
+// converte para Date, que é o que o Prisma exige nas colunas DATE.
+function converterDatas(item) {
+  return Object.fromEntries(
+    Object.entries(item).map(([campo, valor]) => [
+      campo,
+      typeof valor === 'string' && DATA_REGEX.test(valor) ? paraDate(valor) : valor,
+    ])
+  );
+}
+
 async function criarTodos(delegate, data) {
   for (const item of data) {
-    await delegate.create({ data: item });
+    await delegate.create({ data: converterDatas(item) });
   }
 }
 

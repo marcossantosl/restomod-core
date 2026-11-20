@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { campoData } = require('./campos');
 
 const createSchema = z.object({
   sistemaAlvo: z.string().trim().min(1, 'Sistema alvo é obrigatório').max(255),
@@ -6,8 +7,8 @@ const createSchema = z.object({
   descricaoAdaptacao: z.string().trim().max(255).optional(),
   whpFinal: z.number().int().optional(),
   kgfmFinal: z.number().int().optional(),
-  dataUpgradeInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato AAAA-MM-DD').optional(),
-  dataUpgradeFim: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato AAAA-MM-DD').optional(),
+  dataUpgradeInicio: campoData.optional(),
+  dataUpgradeFim: campoData.optional(),
   idProjeto: z.number().int().positive('idProjeto é obrigatório'),
 });
 

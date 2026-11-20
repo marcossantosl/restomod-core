@@ -1,8 +1,9 @@
 const { z } = require('zod');
+const { campoData } = require('./campos');
 
 const createSchema = z.object({
   status: z.string().trim().min(1, 'Status é obrigatório').max(100),
-  data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato AAAA-MM-DD').optional(),
+  data: campoData.optional(),
   kmRegistrado: z.number().int().nonnegative().optional(),
   tipoServico: z.string().trim().max(100).optional(),
   descricao: z.string().trim().max(200).optional(),

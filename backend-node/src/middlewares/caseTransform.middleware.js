@@ -1,3 +1,5 @@
+const { formatarDate } = require('../utils/datas');
+
 function isPlainObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value) && value.constructor === Object;
 }
@@ -11,6 +13,8 @@ function snakeToCamelKey(key) {
 }
 
 function deepTransformKeys(value, keyFn) {
+  // Colunas DATE voltam do Prisma como Date; o front espera "AAAA-MM-DD".
+  if (value instanceof Date) return formatarDate(value);
   if (Array.isArray(value)) return value.map((item) => deepTransformKeys(item, keyFn));
   if (isPlainObject(value)) {
     const out = {};

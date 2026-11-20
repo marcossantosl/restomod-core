@@ -112,9 +112,9 @@ model Mecanico {
 
 model Projeto {
   idProjeto        Int       @id @default(autoincrement()) @map("id_projeto")
-  dataInicio       String?   @map("data_inicio")
+  dataInicio       DateTime?   @map("data_inicio") @db.Date
   titulo           String?
-  dataPrevisao     String?   @map("data_previsao")
+  dataPrevisao     DateTime?   @map("data_previsao") @db.Date
   orcamentoTotal   Decimal?  @map("orcamento_total") @db.Decimal(12, 2)
   categoriaProjeto String?   @map("categoria_projeto")
   idOficina        Int?      @map("id_oficina")
@@ -138,8 +138,8 @@ model UpgradeRestomod {
   descricaoAdaptacao String?   @map("descricao_adaptacao")
   whpFinal           Int?      @map("whp_final")
   kgfmFinal          Int?      @map("kgfm_final")
-  dataUpgradeInicio  String?   @map("data_upgrade_inicio")
-  dataUpgradeFim     String?   @map("data_upgrade_fim")
+  dataUpgradeInicio  DateTime?   @map("data_upgrade_inicio") @db.Date
+  dataUpgradeFim     DateTime?   @map("data_upgrade_fim") @db.Date
   idProjeto          Int?      @map("id_projeto")
 
   projeto  Projeto?  @relation(fields: [idProjeto], references: [idProjeto], onDelete: Cascade)
@@ -169,7 +169,7 @@ model Servico {
 model HistoricoProjeto {
   idHistorico  Int       @id @default(autoincrement()) @map("id_historico")
   status       String?
-  data         String?
+  data         DateTime? @db.Date
   kmRegistrado Int?      @map("km_registrado")
   tipoServico  String?   @map("tipo_servico")
   descricao    String?
@@ -182,7 +182,7 @@ model HistoricoProjeto {
 
 model Inspecao {
   idInspecao   Int       @id @default(autoincrement()) @map("id_inspecao")
-  dataInspecao String?   @map("data_inspecao")
+  dataInspecao DateTime?   @map("data_inspecao") @db.Date
   tipo         String?
   resultado    String?
   observacoes  String?
