@@ -1,9 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { requireAuth, handleAuthError } from '@/lib/auth'
 import CrudTable from '@/components/CrudTable'
 
 export default function UpgradeRestomodPage() {
+  const router = useRouter()
   const [data, setData]       = useState<any[]>([])
    const [projetos, setProjetos] = useState<any[]>([])
   const [editing, setEditing] = useState<any | null>(null)
@@ -17,21 +20,31 @@ export default function UpgradeRestomodPage() {
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
-    if (item.id_cliente) {
-      await api.put(`/api/upgraderestomod/${item.id_upgrade_restomod}`, item)
-      setEditing(null)
-    } else {
-      await api.post('/api/upgraderestomod', item)
-      setCreating(false)
-      setNewItem({})
+    if (!requireAuth(router)) return
+    try {
+      if (item.id_upgrade_restomod) {
+        await api.put(`/api/upgraderestomod/${item.id_upgrade_restomod}`, item)
+        setEditing(null)
+      } else {
+        await api.post('/api/upgraderestomod', item)
+        setCreating(false)
+        setNewItem({})
+      }
+      load()
+    } catch (error: any) {
+      if (!handleAuthError(error, router)) alert('Erro ao salvar upgrade.')
     }
-    load()
   }
 
   const handleDelete = async (id: number) => {
+    if (!requireAuth(router)) return
     if (confirm('Deseja deletar este item?')) {
-      await api.delete(`/api/upgraderestomod/${id}`)
-      load()
+      try {
+        await api.delete(`/api/upgraderestomod/${id}`)
+        load()
+      } catch (error: any) {
+        if (!handleAuthError(error, router)) alert('Erro ao remover upgrade.')
+      }
     }
   }
 

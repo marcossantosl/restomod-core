@@ -1,9 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { requireAuth, handleAuthError } from '@/lib/auth'
 import CrudTable from '@/components/CrudTable'
 
 export default function PecasPage() {
+  const router = useRouter()
   const [data, setData]                 = useState<any[]>([])
   const [fornecedores, setFornecedores] = useState<any[]>([]) // Novo estado para o N:N
   const [editing, setEditing]           = useState<any | null>(null)
@@ -18,6 +21,7 @@ export default function PecasPage() {
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
+    if (!requireAuth(router)) return
     try {
       // 1. Extrai os IDs dos fornecedores selecionados no frontend
       const fornecedorIds: number[] = item.id_fornecedor || [];
@@ -58,16 +62,21 @@ export default function PecasPage() {
       }
 
       load();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar peça e fornecedores:", error);
-      alert("Erro ao salvar os dados.");
+      if (!handleAuthError(error, router)) alert("Erro ao salvar os dados.");
     }
   }
 
   const handleDelete = async (id: number) => {
+    if (!requireAuth(router)) return
     if (confirm('Deseja deletar esta peça?')) {
-      await api.delete(`/api/pecas/${id}`)
-      load()
+      try {
+        await api.delete(`/api/pecas/${id}`)
+        load()
+      } catch (error: any) {
+        if (!handleAuthError(error, router)) alert('Erro ao remover peça.')
+      }
     }
   }
 

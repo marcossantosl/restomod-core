@@ -1,9 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { requireAuth, handleAuthError } from '@/lib/auth'
 import CrudTable from '@/components/CrudTable'
 
 export default function HistoricoProjetoPage() {
+  const router = useRouter()
   const [data, setData]       = useState<any[]>([])
   const [servicos, setServicos] = useState<any[]>([])
   const [pecas, setPecas] = useState<any[]>([])
@@ -19,6 +22,7 @@ export default function HistoricoProjetoPage() {
   useEffect(() => { load() }, [])
 
 const handleSave = async (item: any) => {
+  if (!requireAuth(router)) return
   try {
     // Clona o item para não sujar o estado da tela
     const payload = { ...item };
@@ -42,16 +46,21 @@ const handleSave = async (item: any) => {
       setNewItem({});
     }
     load();
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao salvar uso de peça:", error);
-    alert("Erro 400: Verifique se os dados inseridos são válidos.");
+    if (!handleAuthError(error, router)) alert("Erro 400: Verifique se os dados inseridos são válidos.");
   }
 }
 
   const handleDelete = async (id: number) => {
+    if (!requireAuth(router)) return
     if (confirm('Deseja deletar este uso?')) {
-      await api.delete(`/api/usopeca/${id}`)
-      load()
+      try {
+        await api.delete(`/api/usopeca/${id}`)
+        load()
+      } catch (error: any) {
+        if (!handleAuthError(error, router)) alert('Erro ao remover uso de peça.')
+      }
     }
   }
 

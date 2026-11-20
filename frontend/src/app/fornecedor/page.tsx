@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { requireAuth, handleAuthError } from '@/lib/auth'
 import CrudTable from '@/components/CrudTable'
 
 const columns = [
@@ -11,6 +13,7 @@ const columns = [
 ]
 
 export default function FornecedorPage() {
+  const router = useRouter()
   const [data, setData]       = useState<any[]>([])
   const [editing, setEditing] = useState<any | null>(null)
   const [creating, setCreating] = useState(false)
@@ -20,21 +23,31 @@ export default function FornecedorPage() {
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
-    if (item.id_cliente) {
-      await api.put(`/api/fornecedor/${item.id_cliente}`, item)
-      setEditing(null)
-    } else {
-      await api.post('/api/fornecedor', item)
-      setCreating(false)
-      setNewItem({})
+    if (!requireAuth(router)) return
+    try {
+      if (item.id_fornecedor) {
+        await api.put(`/api/fornecedor/${item.id_fornecedor}`, item)
+        setEditing(null)
+      } else {
+        await api.post('/api/fornecedor', item)
+        setCreating(false)
+        setNewItem({})
+      }
+      load()
+    } catch (error: any) {
+      if (!handleAuthError(error, router)) alert('Erro ao salvar fornecedor.')
     }
-    load()
   }
 
   const handleDelete = async (id: number) => {
+    if (!requireAuth(router)) return
     if (confirm('Deseja deletar este fornecedor?')) {
-      await api.delete(`/api/fornecedor/${id}`)
-      load()
+      try {
+        await api.delete(`/api/fornecedor/${id}`)
+        load()
+      } catch (error: any) {
+        if (!handleAuthError(error, router)) alert('Erro ao remover fornecedor.')
+      }
     }
   }
 

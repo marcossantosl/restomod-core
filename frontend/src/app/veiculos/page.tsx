@@ -1,9 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { requireAuth, handleAuthError } from '@/lib/auth'
 import CrudTable from '@/components/CrudTable'
 
 export default function VeiculosPage() {
+  const router = useRouter()
   const [data, setData]         = useState<any[]>([])
   const [editing, setEditing]   = useState<any | null>(null)
   
@@ -29,6 +32,7 @@ export default function VeiculosPage() {
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
+    if (!requireAuth(router)) return
     try {
       // CORREÇÃO 3: Blindagem de tipos. Converte strings do HTML para números no Banco
       const payload = {
@@ -52,17 +56,22 @@ export default function VeiculosPage() {
       }
       
       load()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar:", error)
-      alert("Erro ao salvar veículo.")
+      if (!handleAuthError(error, router)) alert("Erro ao salvar veículo.")
     }
   }
 
   const handleDelete = async (id: number) => {
+    if (!requireAuth(router)) return
     // Alerta útil lembrando a regra do CASCADE que configuramos no banco
     if (confirm('Deseja deletar este veículo? Projetos e Históricos atrelados a ele também serão excluídos pelo banco.')) {
-      await api.delete(`/api/veiculos/${id}`)
-      load()
+      try {
+        await api.delete(`/api/veiculos/${id}`)
+        load()
+      } catch (error: any) {
+        if (!handleAuthError(error, router)) alert('Erro ao remover veículo.')
+      }
     }
   }
 

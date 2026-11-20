@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { requireAuth, handleAuthError } from '@/lib/auth'
 import CrudTable from '@/components/CrudTable'
 
 const columns = [
@@ -13,6 +15,7 @@ const columns = [
 ]
 
 export default function OficinasPage() {
+  const router = useRouter()
   const [data, setData]         = useState<any[]>([])
   const [editing, setEditing]   = useState<any | null>(null)
   const [creating, setCreating] = useState(false)
@@ -22,21 +25,31 @@ export default function OficinasPage() {
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
-    if (item.id_oficina) {
-      await api.put(`/api/oficinas/${item.id_oficina}`, item)
-      setEditing(null)
-    } else {
-      await api.post('/api/oficinas', item)
-      setCreating(false)
-      setNewItem({})
+    if (!requireAuth(router)) return
+    try {
+      if (item.id_oficina) {
+        await api.put(`/api/oficinas/${item.id_oficina}`, item)
+        setEditing(null)
+      } else {
+        await api.post('/api/oficinas', item)
+        setCreating(false)
+        setNewItem({})
+      }
+      load()
+    } catch (error: any) {
+      if (!handleAuthError(error, router)) alert('Erro ao salvar oficina.')
     }
-    load()
   }
 
   const handleDelete = async (id: number) => {
+    if (!requireAuth(router)) return
     if (confirm('Deseja deletar esta oficina?')) {
-      await api.delete(`/api/oficinas/${id}`)
-      load()
+      try {
+        await api.delete(`/api/oficinas/${id}`)
+        load()
+      } catch (error: any) {
+        if (!handleAuthError(error, router)) alert('Erro ao remover oficina.')
+      }
     }
   }
 

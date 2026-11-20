@@ -1,25 +1,44 @@
 services:
 
-  # ─── Backend (Go + Gin) ───────────────────────────────────────
+  # ─── Banco de Dados ───────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: oficina_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: oficina_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d oficina_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - oficina_net
+
+  # ─── Backend (Node.js + Express + Prisma) ─────────────────────
   backend:
     build:
-      context: ./backend
+      context: ./backend-node
       dockerfile: Dockerfile
     container_name: oficina_backend
     restart: always
     environment:
-      DB_HOST: ${DB_HOST:-host.docker.internal}
-      DB_PORT: ${DB_PORT:-5433}
-      DB_USER: ${DB_USER:?defina DB_USER no .env}
-      DB_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env}
-      DB_NAME: ${DB_NAME:-oficina_db}
+      DATABASE_URL: postgresql://postgres:1234@db:5432/oficina_db
       PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-troque_por_um_segredo_forte_e_aleatorio}
+      JWT_EXPIRES_IN: 1d
+      CORS_ORIGIN: http://localhost:3000
     ports:
       - "8080:8080"
-    extra_hosts:                     # <-- ADICIONE ESTAS DUAS LINHAS
-      - "host.docker.internal:host-gateway"
-    # depends_on:
-      # - db
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - oficina_net
 
@@ -30,9 +49,15 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8080
+        # O browser do usuário acessa o n8n diretamente via localhost
         NEXT_PUBLIC_N8N_WEBHOOK_URL: http://localhost:5678/webhook/assistente
     container_name: oficina_frontend
     restart: always
+    environment:
+      # Usada só no server (Server Components e Route Handlers), que rodam
+      # dentro deste container e por isso precisam do hostname do serviço
+      # "backend" na rede do Compose, em vez de "localhost".
+      API_INTERNAL_URL: http://backend:8080
     ports:
       - "3000:3000"
     depends_on:
@@ -50,6 +75,8 @@ services:
       N8N_HOST: 0.0.0.0
       N8N_PORT: 5678
       N8N_PROTOCOL: http
+      # WEBHOOK_URL deve ser o endereço pelo qual o BROWSER consegue atingir o n8n
+      # Em dev local: http://localhost:5678
       WEBHOOK_URL: http://localhost:5678
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       N8N_SECURE_COOKIE: "false"
@@ -94,7 +121,8 @@ services:
 
 # ─── Volumes persistentes ────────────────────────────────────────
 volumes:
-  n8n_data: # O volume do pgdata foi removido daqui
+  pgdata:
+  n8n_data:
 
 # ─── Rede interna ────────────────────────────────────────────────
 networks:

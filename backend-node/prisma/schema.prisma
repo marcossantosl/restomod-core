@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Autenticação (novo) ──────────────────────────────────────────
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  senha     String // hash bcrypt — nunca retornado nas respostas da API
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("usuario")
+}
+
+// ─── Domínio da oficina (tabelas já existentes, mapeadas 1:1) ─────
+
+model Oficina {
+  idOficina     Int    @id @default(autoincrement()) @map("id_oficina")
+  nome          String
+  cnpj          String?
+  especialidade String?
+  endereco      String?
+  telefone      String?
+
+  mecanicos Mecanico[]
+  projetos  Projeto[]
+
+  @@map("oficina")
+}
+
+model Cliente {
+  idCliente Int     @id @default(autoincrement()) @map("id_cliente")
+  nome      String
+  cpf       String?
+  email     String?
+  endereco  String?
+  telefone  String?
+
+  veiculos Veiculo[]
+  projetos Projeto[]
+
+  @@map("cliente")
+}
+
+model Fornecedor {
+  idFornecedor  Int    @id @default(autoincrement()) @map("id_fornecedor")
+  nome          String
+  especialidade String?
+  contato       String?
+
+  pecas FornecedorPeca[]
+
+  @@map("fornecedor")
+}
+
+model Peca {
+  idPeca          Int      @id @default(autoincrement()) @map("id_peca")
+  nome            String?
+  fabricante      String?
+  origem          String?
+  estoque         Int?     @default(0)
+  numeroPeca      Int?     @map("numero_peca")
+  precoReferencia Decimal? @map("preco_referencia") @db.Decimal(10, 2)
+  tipoPeca        String?  @map("tipo_peca")
+
+  fornecedores FornecedorPeca[]
+  usosPeca     UsoPeca[]
+
+  @@map("peca")
+}
+
+model Veiculo {
+  idVeiculo     Int     @id @default(autoincrement()) @map("id_veiculo")
+  marca         String?
+  modelo        String?
+  placa         String?
+  chassi        String?
+  anoFabricacao Int?    @map("ano_fabricacao")
+  status        String?
+  categoria     String?
+  whpOriginal   Int?    @map("whp_original")
+  kgfmOriginal  Int?    @map("kgfm_original")
+  idCliente     Int?    @map("id_cliente")
+
+  cliente   Cliente?   @relation(fields: [idCliente], references: [idCliente], onDelete: Cascade)
+  projetos  Projeto[]
+  inspecoes Inspecao[]
+
+  @@map("veiculo")
+}
+
+model Mecanico {
+  idMecanico    Int     @id @default(autoincrement()) @map("id_mecanico")
+  nome          String?
+  cpf           String?
+  especialidade String?
+  nivel         String?
+  idOficina     Int?    @map("id_oficina")
+
+  oficina   Oficina?          @relation(fields: [idOficina], references: [idOficina])
+  servicos  MecanicoServico[]
+  inspecoes Inspecao[]
+
+  @@map("mecanico")
+}
+
+model Projeto {
+  idProjeto        Int       @id @default(autoincrement()) @map("id_projeto")
+  dataInicio       String?   @map("data_inicio")
+  titulo           String?
+  dataPrevisao     String?   @map("data_previsao")
+  orcamentoTotal   Decimal?  @map("orcamento_total") @db.Decimal(12, 2)
+  categoriaProjeto String?   @map("categoria_projeto")
+  idOficina        Int?      @map("id_oficina")
+  idCliente        Int?      @map("id_cliente")
+  idVeiculo        Int?      @map("id_veiculo")
+
+  oficina           Oficina?           @relation(fields: [idOficina], references: [idOficina])
+  cliente           Cliente?           @relation(fields: [idCliente], references: [idCliente])
+  veiculo           Veiculo?           @relation(fields: [idVeiculo], references: [idVeiculo], onDelete: Cascade)
+  servicos          Servico[]
+  historicos        HistoricoProjeto[]
+  upgradesRestomod  UpgradeRestomod[]
+
+  @@map("projeto")
+}
+
+model UpgradeRestomod {
+  idUpgradeRestomod  Int       @id @default(autoincrement()) @map("id_upgrade_restomod")
+  sistemaAlvo        String?   @map("sistema_alvo")
+  veiculoDoador      String?   @map("veiculo_doador")
+  descricaoAdaptacao String?   @map("descricao_adaptacao")
+  whpFinal           Int?      @map("whp_final")
+  kgfmFinal          Int?      @map("kgfm_final")
+  dataUpgradeInicio  String?   @map("data_upgrade_inicio")
+  dataUpgradeFim     String?   @map("data_upgrade_fim")
+  idProjeto          Int?      @map("id_projeto")
+
+  projeto  Projeto?  @relation(fields: [idProjeto], references: [idProjeto], onDelete: Cascade)
+  servicos Servico[]
+
+  @@map("upgrade_restomod")
+}
+
+model Servico {
+  idServico         Int      @id @default(autoincrement()) @map("id_servico")
+  categoria         String?
+  descricao         String?
+  horasRealizadas   Decimal? @map("horas_realizadas") @db.Decimal(5, 2)
+  horasEstimadas    Decimal? @map("horas_estimadas") @db.Decimal(5, 2)
+  valor             Decimal? @db.Decimal(10, 2)
+  idProjeto         Int?     @map("id_projeto")
+  idUpgradeRestomod Int?     @map("id_upgrade_restomod")
+
+  projeto         Projeto?          @relation(fields: [idProjeto], references: [idProjeto], onDelete: Cascade)
+  upgradeRestomod UpgradeRestomod?  @relation(fields: [idUpgradeRestomod], references: [idUpgradeRestomod], onDelete: SetNull)
+  mecanicos       MecanicoServico[]
+  usosPeca        UsoPeca[]
+
+  @@map("servico")
+}
+
+model HistoricoProjeto {
+  idHistorico  Int       @id @default(autoincrement()) @map("id_historico")
+  status       String?
+  data         String?
+  kmRegistrado Int?      @map("km_registrado")
+  tipoServico  String?   @map("tipo_servico")
+  descricao    String?
+  idProjeto    Int?      @map("id_projeto")
+
+  projeto Projeto? @relation(fields: [idProjeto], references: [idProjeto], onDelete: Cascade)
+
+  @@map("historico_projeto")
+}
+
+model Inspecao {
+  idInspecao   Int       @id @default(autoincrement()) @map("id_inspecao")
+  dataInspecao String?   @map("data_inspecao")
+  tipo         String?
+  resultado    String?
+  observacoes  String?
+  idMecanico   Int?      @map("id_mecanico")
+  idVeiculo    Int?      @map("id_veiculo")
+
+  mecanico Mecanico? @relation(fields: [idMecanico], references: [idMecanico], onDelete: Restrict)
+  veiculo  Veiculo?  @relation(fields: [idVeiculo], references: [idVeiculo], onDelete: Cascade)
+
+  @@map("inspecao")
+}
+
+// ─── Tabelas associativas (N:N) ────────────────────────────────────
+
+model MecanicoServico {
+  idServico  Int @map("id_servico")
+  idMecanico Int @map("id_mecanico")
+
+  servico  Servico  @relation(fields: [idServico], references: [idServico], onDelete: Cascade)
+  mecanico Mecanico @relation(fields: [idMecanico], references: [idMecanico], onDelete: Cascade)
+
+  @@id([idServico, idMecanico])
+  @@map("realiza")
+}
+
+model FornecedorPeca {
+  idPeca       Int @map("id_peca")
+  idFornecedor Int @map("id_fornecedor")
+
+  peca       Peca       @relation(fields: [idPeca], references: [idPeca], onDelete: Cascade)
+  fornecedor Fornecedor @relation(fields: [idFornecedor], references: [idFornecedor], onDelete: Cascade)
+
+  @@id([idPeca, idFornecedor])
+  @@map("fornece")
+}
+
+model UsoPeca {
+  idUsoPeca  Int      @id @default(autoincrement()) @map("id_uso_peca")
+  valorVenda Decimal? @map("valor_venda") @db.Decimal(10, 2)
+  quantidade Int?
+  idPeca     Int?     @map("id_peca")
+  idServico  Int?     @map("id_servico")
+
+  peca    Peca?    @relation(fields: [idPeca], references: [idPeca], onDelete: Restrict)
+  servico Servico? @relation(fields: [idServico], references: [idServico], onDelete: Restrict)
+
+  @@map("uso_peca")
+}

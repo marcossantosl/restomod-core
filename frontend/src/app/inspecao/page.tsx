@@ -1,9 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { requireAuth, handleAuthError } from '@/lib/auth'
 import CrudTable from '@/components/CrudTable'
 
 export default function InspecaoPage() {
+  const router = useRouter()
   const [data, setData]         = useState<any[]>([])
   const [mecanicos, setMecanicos] = useState<any[]>([])
   const [veiculos, setVeiculos] = useState<any[]>([])
@@ -20,7 +23,8 @@ export default function InspecaoPage() {
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
-    // BLINDAGEM: Garante que os dados vão limpos para o GORM não dar Bad Request
+    if (!requireAuth(router)) return
+    // BLINDAGEM: Garante que os dados vão limpos para o backend não dar Bad Request
     const payload = {
       ...item,
       id_inspecao: item.id_inspecao ? Number(item.id_inspecao) : undefined,
@@ -32,22 +36,31 @@ export default function InspecaoPage() {
       observacoes: item.observacoes || ''
     }
 
-    // CORREÇÃO: Testando o id correto (id_inspecao)
-    if (item.id_inspecao) {
-      await api.put(`/api/inspecao/${item.id_inspecao}`, payload)
-      setEditing(null)
-    } else {
-      await api.post('/api/inspecao', payload)
-      setCreating(false)
-      setNewItem({})
+    try {
+      // CORREÇÃO: Testando o id correto (id_inspecao)
+      if (item.id_inspecao) {
+        await api.put(`/api/inspecao/${item.id_inspecao}`, payload)
+        setEditing(null)
+      } else {
+        await api.post('/api/inspecao', payload)
+        setCreating(false)
+        setNewItem({})
+      }
+      load()
+    } catch (error: any) {
+      if (!handleAuthError(error, router)) alert('Erro ao salvar inspeção.')
     }
-    load()
   }
 
   const handleDelete = async (id: number) => {
+    if (!requireAuth(router)) return
     if (confirm('Deseja deletar esta inspeção?')) {
-      await api.delete(`/api/inspecao/${id}`)
-      load()
+      try {
+        await api.delete(`/api/inspecao/${id}`)
+        load()
+      } catch (error: any) {
+        if (!handleAuthError(error, router)) alert('Erro ao remover inspeção.')
+      }
     }
   }
 

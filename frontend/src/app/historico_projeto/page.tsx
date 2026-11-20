@@ -1,9 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { requireAuth, handleAuthError } from '@/lib/auth'
 import CrudTable from '@/components/CrudTable'
 
 export default function HistoricoProjetoPage() {
+  const router = useRouter()
   const [data, setData]         = useState<any[]>([])
   const [projetos, setProjetos] = useState<any[]>([])
   const [editing, setEditing] = useState<any | null>(null)
@@ -17,21 +20,31 @@ export default function HistoricoProjetoPage() {
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
-    if (item.id_historico) {
-      await api.put(`/api/historicoprojeto/${item.id_historico}`, item)
-      setEditing(null)
-    } else {
-      await api.post('/api/historicoprojeto', item)
-      setCreating(false)
-      setNewItem({})
+    if (!requireAuth(router)) return
+    try {
+      if (item.id_historico) {
+        await api.put(`/api/historicoprojeto/${item.id_historico}`, item)
+        setEditing(null)
+      } else {
+        await api.post('/api/historicoprojeto', item)
+        setCreating(false)
+        setNewItem({})
+      }
+      load()
+    } catch (error: any) {
+      if (!handleAuthError(error, router)) alert('Erro ao salvar histórico.')
     }
-    load()
   }
 
   const handleDelete = async (id: number) => {
+    if (!requireAuth(router)) return
     if (confirm('Deseja deletar este histórico?')) {
-      await api.delete(`/api/historicoprojeto/${id}`)
-      load()
+      try {
+        await api.delete(`/api/historicoprojeto/${id}`)
+        load()
+      } catch (error: any) {
+        if (!handleAuthError(error, router)) alert('Erro ao remover histórico.')
+      }
     }
   }
 

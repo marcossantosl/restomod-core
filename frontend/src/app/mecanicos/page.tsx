@@ -1,9 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { requireAuth, handleAuthError } from '@/lib/auth'
 import CrudTable from '@/components/CrudTable'
 
 export default function MecanicosPage() {
+  const router = useRouter()
   const [data, setData]         = useState<any[]>([])
   const [oficinas, setOficinas] = useState<any[]>([])
   const [servicos, setServicos] = useState<any[]>([]) // 1. Novo estado para as oficinas
@@ -21,21 +24,31 @@ export default function MecanicosPage() {
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
-    if (item.id_mecanico) {
-      await api.put(`/api/mecanicos/${item.id_mecanico}`, item)
-      setEditing(null)
-    } else {
-      await api.post('/api/mecanicos', item)
-      setCreating(false)
-      setNewItem({})
+    if (!requireAuth(router)) return
+    try {
+      if (item.id_mecanico) {
+        await api.put(`/api/mecanicos/${item.id_mecanico}`, item)
+        setEditing(null)
+      } else {
+        await api.post('/api/mecanicos', item)
+        setCreating(false)
+        setNewItem({})
+      }
+      load()
+    } catch (error: any) {
+      if (!handleAuthError(error, router)) alert('Erro ao salvar mecânico.')
     }
-    load()
   }
 
   const handleDelete = async (id: number) => {
+    if (!requireAuth(router)) return
     if (confirm('Deseja deletar este mecânico?')) {
-      await api.delete(`/api/mecanicos/${id}`)
-      load()
+      try {
+        await api.delete(`/api/mecanicos/${id}`)
+        load()
+      } catch (error: any) {
+        if (!handleAuthError(error, router)) alert('Erro ao remover mecânico.')
+      }
     }
   }
 

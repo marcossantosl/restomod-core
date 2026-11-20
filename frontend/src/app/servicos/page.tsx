@@ -1,9 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { requireAuth, handleAuthError } from '@/lib/auth'
 import CrudTable from '@/components/CrudTable'
 
 export default function ServicosPage() {
+  const router = useRouter()
   const [data, setData]                 = useState<any[]>([])
   const [projetos, setProjetos]         = useState<any[]>([]) 
   const [mecanicos, setMecanicos]       = useState<any[]>([]) 
@@ -36,6 +39,7 @@ export default function ServicosPage() {
   useEffect(() => { load() }, [])
 
   const handleSave = async (item: any) => {
+    if (!requireAuth(router)) return
     try {
       const mecanicoIds: number[] = item.id_mecanico || [];
 
@@ -81,16 +85,21 @@ export default function ServicosPage() {
       }
 
       load();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar serviço e relacionamentos:", error);
-      alert("Erro ao salvar os dados. Verifique o console.");
+      if (!handleAuthError(error, router)) alert("Erro ao salvar os dados. Verifique o console.");
     }
   }
 
   const handleDelete = async (id: number) => {
+    if (!requireAuth(router)) return
     if (confirm('Deseja deletar este serviço? O banco bloqueará se houver peças usadas!')) {
-      await api.delete(`/api/servicos/${id}`)
-      load()
+      try {
+        await api.delete(`/api/servicos/${id}`)
+        load()
+      } catch (error: any) {
+        if (!handleAuthError(error, router)) alert('Erro ao remover serviço.')
+      }
     }
   }
 
